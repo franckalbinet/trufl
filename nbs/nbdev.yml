@@ -1,0 +1,9 @@
+project:
+  output-dir: _docs
+
+website:
+  title: "trufl"
+  site-url: "https://franckalbinet.github.io/trufl"
+  description: "Optimize adaptive sampling"
+  repo-branch: main
+  repo-url: "https://github.com/franckalbinet/trufl"
