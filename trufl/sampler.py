@@ -32,7 +32,7 @@ class Sampler:
                         values:List[float] # The sampled values
                         ) -> gpd.GeoDataFrame: 
         gdf = geoseries.to_frame(name='geometry').explode(index_parts=False)
-        gdf = gdf.assign(values=values)
+        gdf = gdf.assign(value=values)
         return gdf.reset_index(names=self.id_name)
     
     def sample(self, 
