@@ -12,9 +12,7 @@ from .utils import reproject_raster
 import geopandas as gpd
 from typing import List
 
-from .utils import gridder
-
-# %% ../nbs/01_sampler.ipynb 4
+# %% ../nbs/01_sampler.ipynb 5
 class Sampler:
     def __init__(self, 
                fname_raster:str, # The path to the raster file.
@@ -26,7 +24,8 @@ class Sampler:
         with rasterio.open(fname_raster) as src:
             self.band_data = src.read(band)
             self.affine = src.transform
-    
+            self.bounds = src.bounds
+
     def to_geodataframe(self, 
                         geoseries:gpd.GeoSeries, # The locations
                         values:List[float] # The sampled values
@@ -40,5 +39,5 @@ class Sampler:
                ) -> gpd.GeoDataFrame:
         coords = [(x, y) for x, y in geoseries.get_coordinates().values]
         pixel_coords = [transform.rowcol(self.affine, *pair) for pair in coords]
-        values = [self.band_data[int(y), int(x)] for (x, y) in pixel_coords]
+        values = [self.band_data[int(x), int(y)] for (x, y) in pixel_coords]
         return self.to_geodataframe(geoseries, values)

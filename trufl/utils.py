@@ -88,7 +88,7 @@ def gridder(
     gdf = gdf.drop(0, axis=1)
     return gdf.rename(columns={'index': 'loc_id'})
 
-# %% ../nbs/03_utils.ipynb 6
+# %% ../nbs/03_utils.ipynb 7
 def anonymize_raster(fname_raster:str, # The path to the raster file.
                      new_lon_origin:float, # Longitude of the new origin
                      new_lat_origin:float, # Latitude of the new origin
