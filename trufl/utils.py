@@ -6,6 +6,7 @@ __all__ = ['reproject_raster', 'gridder', 'anonymize_raster']
 # %% ../nbs/03_utils.ipynb 2
 import numpy as np
 import rasterio
+
 from rasterio.warp import calculate_default_transform, reproject, Resampling
 from rasterio.transform import from_origin
 import geopandas as gpd
