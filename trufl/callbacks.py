@@ -29,7 +29,11 @@ class Callback(): pass
 
 # %% ../nbs/04_callbacks.ipynb 8
 class State:
-    def __init__(self, measurements, cbs): fc.store_attr()
+    def __init__(self, 
+                 measurements, 
+                 cbs
+                ): 
+        fc.store_attr()
         
     def get(self, loc_id, as_numpy=False):
         variables = self.run_cbs(loc_id)
