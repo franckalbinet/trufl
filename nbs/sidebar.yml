@@ -1,7 +1,7 @@
 website:
   sidebar:
     contents:
-      - tutorials/quick_start.ipynb
+      - ./tutorials/quick-start.ipynb
       - section: API
         contents:
           - 01_sampler.ipynb
