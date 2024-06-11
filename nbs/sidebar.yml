@@ -1,0 +1,10 @@
+website:
+  sidebar:
+    contents:
+      - ./tutorials/quick-start.ipynb
+      - section: API
+        contents:
+          - 01_sampler.ipynb
+          - 03_utils.ipynb
+          - 04_callbacks.ipynb
+          
