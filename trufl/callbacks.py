@@ -21,6 +21,7 @@ import geopandas as gpd
 from typing import List
 from collections.abc import Callable
 import rasterio
+from rasterio.mask import mask
 
 # %% ../nbs/04_callbacks.ipynb 5
 @dataclass
@@ -142,6 +143,6 @@ class PriorCB(Callback):
     def __call__(self, loc_id, state): 
         polygon = self.grid.loc[self.grid.loc_id == loc_id].geometry
         with rasterio.open(self.fname_raster) as src:
-            out_image, out_transform = rasterio.mask.mask(src, polygon, crop=True)
+            out_image, out_transform = mask(src, polygon, crop=True)
             mean_value = np.mean(out_image)
         return Variable('Prior', mean_value)
