@@ -32,13 +32,6 @@ class Optimizer:
         self.matrix = decision_matrix
         
         return decision_matrix
-    
-    def build_weight_vector(self, weight_vector, benefit_vector):
-        "Build the weight vector for the optimization"
-        self.weight_vector = weight_vector
-        self.benefit_vector = benefit_vector
-        return
-        
         
     def rank(self,
         x_matrix,
@@ -91,8 +84,8 @@ class Optimizer:
         # their corresponding scores in descending order
         ranking = []
         for i in range(len(alt_names)):
-            ranking.append((alt_names[r_indices[i]], s_vector[r_indices[i]]))
-
+            ranking.append((alt_names[r_indices[i]], s_vector[r_indices[i]], i+1))
+        
         return ranking
 
         

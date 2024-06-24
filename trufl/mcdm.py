@@ -4,7 +4,7 @@
 __all__ = ['is_normalized_matrix', 'is_normalized_vector', 'check_scoring_input', 'check_weighting_input',
            'check_normalization_input', 'abspearson', 'dcor', 'squared_dcov_matrix', 'dist_matrix', 'lin_func',
            'squared_dcov', 'squared_dcor', 'pearson', 'correlate', 'em', 'mw', 'sd', 'vic', 'linear1', 'linear2',
-           'linear3', 'vector', 'normalize', 'critic', 'weigh', 'topsis', 'saw', 'score']
+           'linear3', 'vector', 'normalize', 'critic', 'weigh', 'topsis', 'cp', 'score']
 
 # %% ../nbs/05_mcdm.ipynb 1
 import numpy as np
@@ -35,7 +35,7 @@ def check_scoring_input(z_matrix, w_vector, is_benefit_z, s_method):
     Raise an exception if any argument is inappropriate for the corresponding
     scoring method
     """
-    if s_method.upper() in {"SAW", "MEW", "TOPSIS", "MTOPSIS"}:
+    if s_method.upper() in {"SAW", "MEW", "TOPSIS", "MTOPSIS", "CP"}:
         if not is_normalized_matrix(z_matrix):
             raise ValueError(
                 "The decision matrix must be normalized in order to apply "
@@ -641,42 +641,50 @@ def topsis(z_matrix, w_vector, is_benefit_z):
 
 
 # %% ../nbs/05_mcdm.ipynb 19
-def saw(z_matrix, w_vector, is_benefit_z):
+def cp(z_matrix, w_vector, is_benefit_z):
     """
-    Return the Simple Additive Weighting scores of the provided decision
-    matrix with the provided weight vector.
+    Return the Technique for Order Preference by Similarity to Ideal Solution
+    scores of the provided decision matrix with the provided weight vector.
     """
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     w_vector = np.array(w_vector, dtype=np.float64)
-    check_scoring_input(z_matrix, w_vector, is_benefit_z, "SAW")
+    check_scoring_input(z_matrix, w_vector, is_benefit_z, "CP")
 
-    # Determine whether the scores should be sorted in descending order
-    if sum(is_benefit_z) == len(is_benefit_z):
-        desc_order = True
-    elif sum(is_benefit_z) == 0:
-        desc_order = False
-    else:
-        raise ValueError(
-            "All criteria must be either benefit or cost criteria in order "
-            + "to use the SAW method",
-        )
+    # CP scores should always be sorted in descending order
+    desc_order = False
+
+    # Construct the weighted normalized decision matrix
+    t_matrix = np.multiply(z_matrix, w_vector)
+
+    # Derive the positive and negative ideal solutions
+    pos_ideal_sol = np.zeros(t_matrix.shape[1], dtype=np.float64)
+    neg_ideal_sol = np.zeros(t_matrix.shape[1], dtype=np.float64)
+    for j in range(t_matrix.shape[1]):
+        if is_benefit_z[j]:
+            pos_ideal_sol[j] = np.amax(t_matrix[:, j])
+            neg_ideal_sol[j] = np.amin(t_matrix[:, j])
+        else:
+            pos_ideal_sol[j] = np.amin(t_matrix[:, j])
+            neg_ideal_sol[j] = np.amax(t_matrix[:, j])
 
     # Compute the score of each alternative
-    s_vector = z_matrix.dot(w_vector)
+    s_vector = np.zeros(t_matrix.shape[0], dtype=np.float64)
+    for i in range(t_matrix.shape[0]):
+        pos_ideal_dist = np.linalg.norm(pos_ideal_sol - t_matrix[i, :])
+        s_vector[i] = pos_ideal_dist
 
     return s_vector, desc_order
 
-
-# %% ../nbs/05_mcdm.ipynb 20
+# %% ../nbs/05_mcdm.ipynb 21
 def score(z_matrix, is_benefit_z, w_vector, s_method):
     """
     Return the selected scores of the provided decision matrix with the
     provided weight vector.
     """
     # Use the selected scoring method
-    if s_method.upper() == "SAW":
-        return saw(z_matrix, w_vector, is_benefit_z)
+    if s_method.upper() == "CP":
+        return cp(z_matrix, w_vector, is_benefit_z)
     elif s_method.upper() == "TOPSIS":
         return topsis(z_matrix, w_vector, is_benefit_z)
 
