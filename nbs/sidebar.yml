@@ -4,7 +4,10 @@ website:
       - ./tutorials/quick-start.ipynb
       - section: API
         contents:
+          - 00_reader.ipynb
           - 01_sampler.ipynb
+          - 02_optimizer.ipynb
           - 03_utils.ipynb
           - 04_callbacks.ipynb
+          - 05_mcdm.ipynb
           

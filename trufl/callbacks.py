@@ -145,8 +145,6 @@ class MoranIOnlyCB(Callback):
         subset = state.measurements[state.measurements.loc_id == loc_id];
         expanded_measurements = state.expand_to_k_nearest(subset, k=self.k)
         moran = esda.moran.Moran(expanded_measurements['value'], self._weights(expanded_measurements))
-        if moran.p_sim > self.p_threshold:
-            print(moran.p_sim)
         return Variable('Moran.I', moran.I if moran.p_sim < self.p_threshold else np.nan)
 
 # %% ../nbs/04_callbacks.ipynb 25
