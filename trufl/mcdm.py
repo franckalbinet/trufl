@@ -6,10 +6,10 @@ __all__ = ['is_normalized_matrix', 'is_normalized_vector', 'check_scoring_input'
            'squared_dcov', 'squared_dcor', 'pearson', 'correlate', 'em', 'mw', 'sd', 'vic', 'linear1', 'linear2',
            'linear3', 'vector', 'normalize', 'critic', 'weigh', 'topsis', 'cp', 'score']
 
-# %% ../nbs/05_mcdm.ipynb 1
+# %% ../nbs/05_mcdm.ipynb 2
 import numpy as np
 
-# %% ../nbs/05_mcdm.ipynb 2
+# %% ../nbs/05_mcdm.ipynb 3
 def is_normalized_matrix(z_matrix):
     """
     Return a Boolean value to indicate whether the matrix is normalized or not
@@ -19,7 +19,7 @@ def is_normalized_matrix(z_matrix):
         and np.sum(np.greater(z_matrix, 1.0)) == 0
     )
 
-
+# %% ../nbs/05_mcdm.ipynb 4
 def is_normalized_vector(w_vector):
     """
     Return a Boolean value to indicate whether the vector is normalized or not
@@ -29,7 +29,7 @@ def is_normalized_vector(w_vector):
         and np.isclose(np.sum(w_vector), 1.0)
     )
 
-
+# %% ../nbs/05_mcdm.ipynb 5
 def check_scoring_input(z_matrix, w_vector, is_benefit_z, s_method):
     """
     Raise an exception if any argument is inappropriate for the corresponding
@@ -60,7 +60,7 @@ def check_scoring_input(z_matrix, w_vector, is_benefit_z, s_method):
     else:
         raise ValueError("Unknown scoring method ({})".format(s_method))
 
-
+# %% ../nbs/05_mcdm.ipynb 6
 def check_weighting_input(z_matrix, c_method, w_method):
     """
     Raise an exception if any argument is inappropriate for the corresponding
@@ -105,7 +105,7 @@ def check_weighting_input(z_matrix, c_method, w_method):
     else:
         raise ValueError("Unknown weighting method ({})".format(w_method))
 
-
+# %% ../nbs/05_mcdm.ipynb 7
 def check_normalization_input(x_matrix, is_benefit_x, n_method):
     """
     Raise an exception if any argument is inappropriate for the corresponding
@@ -137,9 +137,7 @@ def check_normalization_input(x_matrix, is_benefit_x, n_method):
     else:
         raise ValueError("Unknown normalization method ({})".format(n_method))
 
-
-
-# %% ../nbs/05_mcdm.ipynb 3
+# %% ../nbs/05_mcdm.ipynb 8
 def abspearson(z_matrix):
     """
     Return the absolute value of the Pearson correlation coefficients of the
@@ -150,7 +148,7 @@ def abspearson(z_matrix):
 
     return np.absolute(np.corrcoef(z_matrix, rowvar=False))
 
-# %% ../nbs/05_mcdm.ipynb 4
+# %% ../nbs/05_mcdm.ipynb 9
 def dcor(z_matrix):
     """
     Return the distance correlation coefficients of the provided matrix.
@@ -194,7 +192,7 @@ def dcor(z_matrix):
 
     return dcor_matrix
 
-
+# %% ../nbs/05_mcdm.ipynb 10
 def squared_dcov_matrix(z_matrix):
     """
     Return the matrix of squared distance covariance between the columns of
@@ -230,7 +228,7 @@ def squared_dcov_matrix(z_matrix):
 
     return dcov2_matrix
 
-
+# %% ../nbs/05_mcdm.ipynb 11
 def dist_matrix(z_vector):
     """
     Return the Euclidean distance matrix of the provided vector.
@@ -276,8 +274,7 @@ def squared_dcor(jl_dcov2, j_dvar2, l_dvar2):
     """
     return jl_dcov2 / np.sqrt(j_dvar2 * l_dvar2)
 
-
-# %% ../nbs/05_mcdm.ipynb 5
+# %% ../nbs/05_mcdm.ipynb 12
 def pearson(z_matrix):
     """
     Return the Pearson correlation coefficients of the provided matrix.
@@ -288,7 +285,7 @@ def pearson(z_matrix):
     return np.corrcoef(z_matrix, rowvar=False)
 
 
-# %% ../nbs/05_mcdm.ipynb 6
+# %% ../nbs/05_mcdm.ipynb 13
 def correlate(z_matrix, c_method):
     """
     Return the selected correlation coefficients of the provided matrix.
@@ -304,7 +301,7 @@ def correlate(z_matrix, c_method):
         raise ValueError("Unknown correlation method ({})".format(c_method))
 
 
-# %% ../nbs/05_mcdm.ipynb 7
+# %% ../nbs/05_mcdm.ipynb 14
 def em(z_matrix):
     """
     Return the weight vector of the provided decision matrix using the Entropy
@@ -331,7 +328,7 @@ def em(z_matrix):
     return (1.0 - e_vector) / np.sum(1.0 - e_vector)
 
 
-# %% ../nbs/05_mcdm.ipynb 8
+# %% ../nbs/05_mcdm.ipynb 15
 def mw(z_matrix):
     """
     Return the weight vector of the provided decision matrix using the Mean
@@ -347,7 +344,7 @@ def mw(z_matrix):
     )
 
 
-# %% ../nbs/05_mcdm.ipynb 9
+# %% ../nbs/05_mcdm.ipynb 16
 def sd(z_matrix):
     """
     Return the weight vector of the provided decision matrix using the
@@ -365,7 +362,7 @@ def sd(z_matrix):
     return sd_vector / np.sum(sd_vector)
 
 
-# %% ../nbs/05_mcdm.ipynb 10
+# %% ../nbs/05_mcdm.ipynb 17
 def vic(z_matrix, c_method="dCor"):
     """
     Return the weight vector of the provided decision matrix using the
@@ -393,7 +390,7 @@ def vic(z_matrix, c_method="dCor"):
     return imp_vector / np.sum(imp_vector)
 
 
-# %% ../nbs/05_mcdm.ipynb 11
+# %% ../nbs/05_mcdm.ipynb 18
 def linear1(x_matrix, is_benefit_x):
     """
     Return the normalized version of the provided matrix using the Linear
@@ -429,8 +426,7 @@ def linear1(x_matrix, is_benefit_x):
 
     return z_matrix, is_benefit_z
 
-
-# %% ../nbs/05_mcdm.ipynb 12
+# %% ../nbs/05_mcdm.ipynb 19
 def linear2(x_matrix, is_benefit_x):
     """
     Return the normalized version of the provided matrix using the Linear
@@ -465,7 +461,7 @@ def linear2(x_matrix, is_benefit_x):
     return z_matrix, is_benefit_z
 
 
-# %% ../nbs/05_mcdm.ipynb 13
+# %% ../nbs/05_mcdm.ipynb 20
 def linear3(x_matrix, is_benefit_x):
     """
     Return the normalized version of the provided matrix using the Linear
@@ -492,7 +488,7 @@ def linear3(x_matrix, is_benefit_x):
     return z_matrix, is_benefit_z
 
 
-# %% ../nbs/05_mcdm.ipynb 14
+# %% ../nbs/05_mcdm.ipynb 21
 def vector(x_matrix, is_benefit_x):
     """
     Return the normalized version of the provided matrix using the Vector
@@ -520,7 +516,7 @@ def vector(x_matrix, is_benefit_x):
     return z_matrix, is_benefit_z
 
 
-# %% ../nbs/05_mcdm.ipynb 15
+# %% ../nbs/05_mcdm.ipynb 22
 def normalize(x_matrix, is_benefit_x, n_method):
     """
     Return the normalized version of the provided matrix using the selected
@@ -545,7 +541,7 @@ def normalize(x_matrix, is_benefit_x, n_method):
         raise ValueError("Unknown normalization method ({})".format(n_method))
 
 
-# %% ../nbs/05_mcdm.ipynb 16
+# %% ../nbs/05_mcdm.ipynb 23
 def critic(z_matrix, c_method="Pearson"):
     """
     Return the weight vector of the provided decision matrix using the
@@ -574,7 +570,7 @@ def critic(z_matrix, c_method="Pearson"):
     # Normalize the importance of each criterion
     return imp_vector / np.sum(imp_vector)
 
-# %% ../nbs/05_mcdm.ipynb 17
+# %% ../nbs/05_mcdm.ipynb 24
 def weigh(z_matrix, w_method, c_method=None):
     """
     Return the weight vector of the provided decision matrix using the
@@ -595,7 +591,7 @@ def weigh(z_matrix, w_method, c_method=None):
         raise ValueError("Unknown weighting method ({})".format(w_method))
 
 
-# %% ../nbs/05_mcdm.ipynb 18
+# %% ../nbs/05_mcdm.ipynb 25
 def topsis(z_matrix, w_vector, is_benefit_z):
     """
     Return the Technique for Order Preference by Similarity to Ideal Solution
@@ -640,7 +636,7 @@ def topsis(z_matrix, w_vector, is_benefit_z):
     return s_vector, desc_order
 
 
-# %% ../nbs/05_mcdm.ipynb 19
+# %% ../nbs/05_mcdm.ipynb 26
 def cp(z_matrix, w_vector, is_benefit_z):
     """
     Return the Technique for Order Preference by Similarity to Ideal Solution
@@ -676,7 +672,7 @@ def cp(z_matrix, w_vector, is_benefit_z):
 
     return s_vector, desc_order
 
-# %% ../nbs/05_mcdm.ipynb 21
+# %% ../nbs/05_mcdm.ipynb 27
 def score(z_matrix, is_benefit_z, w_vector, s_method):
     """
     Return the selected scores of the provided decision matrix with the

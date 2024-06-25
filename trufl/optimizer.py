@@ -87,10 +87,3 @@ class Optimizer:
             ranking.append((alt_names[r_indices[i]], s_vector[r_indices[i]], i+1))
         
         return ranking
-
-        
-   
-
-    
-
-
