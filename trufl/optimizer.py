@@ -22,8 +22,11 @@ class Optimizer:
         matrix = []
         self.list_id = polygon_list
         for polygon in polygon_list:
+            print("Polygon:", polygon)
             polygon_state = self.state.get(loc_id=polygon, as_numpy=False)
+            print("Polygon State:", polygon_state)
             values = [var.value for var in polygon_state]
+            print("Values:", values)
             matrix.append(values)
             
         decision_matrix = np.vstack(matrix)
