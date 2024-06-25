@@ -33,6 +33,22 @@ class Optimizer:
         
         return decision_matrix
         
+    def process_matrix(self, matrix, benefit_criteria):
+        
+        # convert the NAN values in matrix to 0 or 1 based on the value in the benefit_criteria list.
+        # If the value of the first element is True then convert nan in the first column to 1
+        # If the value of the first element is False then convert nan in the first column to 0
+        # Do this for all elements in benefit_criteria and also columns of matrix
+        for i, is_benefit in enumerate(benefit_criteria):
+            if is_benefit:
+                matrix[:, i][np.isnan(matrix[:, i])] = 1
+                print("Benefit:", i)
+            else:
+                matrix[:, i][np.isnan(matrix[:, i])] = 0
+                print("Cost:", i)
+
+        return matrix
+        
     def rank(self,
         x_matrix,
         alt_names=None,
