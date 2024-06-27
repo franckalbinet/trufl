@@ -128,7 +128,7 @@ class CountCB(Callback):
     def __init__(self, name='Count'): fc.store_attr()
     def __call__(self, loc_id, state): 
         return Variable(
-            name, 
+            self.name, 
             len(state.measurements[state.measurements.loc_id == loc_id]['value'].values))
 
 # %% ../nbs/04_callbacks.ipynb 19
