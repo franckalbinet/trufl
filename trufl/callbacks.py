@@ -125,10 +125,10 @@ class StdCB(Callback):
 # %% ../nbs/04_callbacks.ipynb 18
 class CountCB(Callback):
     "Compute the number of measurements at given location."
-    def __init__(self, name='Standard Deviation'): fc.store_attr()
+    def __init__(self, name='Count'): fc.store_attr()
     def __call__(self, loc_id, state): 
         return Variable(
-            'Count', 
+            name, 
             len(state.measurements[state.measurements.loc_id == loc_id]['value'].values))
 
 # %% ../nbs/04_callbacks.ipynb 19
