@@ -23,6 +23,7 @@ from collections.abc import Callable
 import rasterio
 from rasterio.mask import mask
 import pandas as pd
+from typing import Type
 
 # %% ../nbs/04_callbacks.ipynb 5
 @dataclass
@@ -38,10 +39,12 @@ class Callback(): pass
 class State:
     def __init__(self, 
                  measurements:gpd.GeoDataFrame, # Measurements data with `loc_id`, `geometry` and `value` columns. 
-                 cbs:List[Callable] # List of Callback functions returning `Variable`s.
+                 smp_areas:gpd.GeoDataFrame, # Grid of areas/polygons of interest with `loc_id` and `geometry`.
+                 cbs:List[Callable], # List of Callback functions returning `Variable`s.
                 ): 
         "Collect various variables/metrics per grid cell/administrative unit."
         fc.store_attr()
+        self.unsampled_locs = self.smp_areas.index.difference(self.measurements.index)
 
 # %% ../nbs/04_callbacks.ipynb 9
 @patch
@@ -61,11 +64,8 @@ def get(self:State,
 @patch
 def __call__(self:State, loc_id=None, **kwargs):
     "Get the state variables as defined by `cbs` for all `loc_id`s as a dataframe."
-    if loc_id is not None: return self.get(loc_id, kwargs)
-    results = [
-        {v.name: v.value for v in self.run_cbs(loc_id)} | {'loc_id': loc_id}
-        for loc_id in self.measurements.loc_id.unique()
-    ]
+    loc_ids = self.smp_areas.index
+    results = [{v.name: v.value for v in self.run_cbs(loc_id)} | {'loc_id': loc_id} for loc_id in loc_ids]
     return pd.DataFrame(results).set_index('loc_id')
 
 # %% ../nbs/04_callbacks.ipynb 11
@@ -99,37 +99,49 @@ def run_cbs(self:State, loc_id):
 class MaxCB(Callback):
     "Compute Maximum value of measurements at given location."
     def __init__(self, name='Max'): fc.store_attr()
-    def __call__(self, loc_id, state): 
-        return Variable(
-            self.name, 
-            np.max(state.measurements[state.measurements.loc_id == loc_id]['value'].values))
+    def __call__(self, 
+                 loc_id:int, # Unique id of an individual area of interest. 
+                 o:Type[State] # A State's object
+                ): 
+        if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
+        return Variable(self.name, 
+                        np.max(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb 16
 class MinCB(Callback):
     "Compute Minimum value of measurements at given location."
     def __init__(self, name='Min'): fc.store_attr()
-    def __call__(self, loc_id, state): 
-        return Variable(
-            self.name, 
-            np.min(state.measurements[state.measurements.loc_id == loc_id]['value'].values))
+    def __call__(self, 
+                 loc_id:int, # Unique id of an individual area of interest. 
+                 o:Type[State] # A State's object
+                ): 
+        if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
+        return Variable(self.name, 
+                    np.min(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb 17
 class StdCB(Callback):
     "Compute Standard deviation of measurements at given location."
     def __init__(self, name='Standard Deviation'): fc.store_attr()
-    def __call__(self, loc_id, state): 
-        return Variable(
-            self.name, 
-            np.std(state.measurements[state.measurements.loc_id == loc_id]['value'].values))
+    def __call__(self, 
+                 loc_id:int, # Unique id of an individual area of interest. 
+                 o:Type[State] # A State's object
+                ): 
+        if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
+        return Variable(self.name, 
+                    np.std(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb 18
 class CountCB(Callback):
     "Compute the number of measurements at given location."
     def __init__(self, name='Count'): fc.store_attr()
-    def __call__(self, loc_id, state): 
-        return Variable(
-            self.name, 
-            len(state.measurements[state.measurements.loc_id == loc_id]['value'].values))
+    def __call__(self, 
+                 loc_id:int, # Unique id of an individual area of interest. 
+                 o:Type[State] # A State's object
+                ): 
+        if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
+        return Variable(self.name, 
+                        len(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb 19
 class MoranICB(Callback):
@@ -141,25 +153,32 @@ class MoranICB(Callback):
         w.transform = "R" # Row-standardization
         return w
         
-    def __call__(self, loc_id, state): 
-        subset = state.measurements[state.measurements.loc_id == loc_id]
+    def __call__(self, 
+                 loc_id:int, # Unique id of an individual area of interest. 
+                 o:Type[State] # A State's object
+                ): 
+        if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
+        subset = o.measurements.loc[[loc_id]]
         if len(subset) <= self.min_n: return Variable(self.name, np.nan)
-        expanded_measurements = state.expand_to_k_nearest(subset, k=self.k)
+        expanded_measurements = o.expand_to_k_nearest(subset, k=self.k)
         moran = esda.moran.Moran(expanded_measurements['value'], self._weights(expanded_measurements))
         return Variable(self.name, moran.I if moran.p_sim < self.p_threshold else np.nan)
 
-# %% ../nbs/04_callbacks.ipynb 33
+# %% ../nbs/04_callbacks.ipynb 20
 class PriorCB(Callback):
     "Emulate a prior by taking the mean of measurement over a single grid cell."
     def __init__(self, 
-                 grid:gpd.GeoDataFrame, # Grid of polygons of interest
                  fname_raster:str, # Name of raster file
+                 name:str='Prior' # Name of the State variable
                 ): 
         fc.store_attr()
 
-    def __call__(self, loc_id, state): 
-        polygon = self.grid.loc[self.grid.loc_id == loc_id].geometry
+    def __call__(self, 
+                 loc_id:int, # Unique id of an individual area of interest. 
+                 o:Type[State] # A State's object
+                ): 
+        polygon = o.smp_areas.loc[o.smp_areas.reset_index().loc_id == loc_id].geometry
         with rasterio.open(self.fname_raster) as src:
             out_image, out_transform = mask(src, polygon, crop=True)
             mean_value = np.mean(out_image)
-        return Variable('Prior', mean_value)
+        return Variable(self.name, mean_value)

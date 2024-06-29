@@ -5,39 +5,32 @@ __all__ = ['Sampler']
 
 # %% ../nbs/01_sampler.ipynb 3
 import rasterio
-from rasterio import transform
 import fastcore.all as fc
-import matplotlib.pyplot as plt
-from .utils import reproject_raster
 import geopandas as gpd
-from typing import List
+import numpy as np
 
 # %% ../nbs/01_sampler.ipynb 5
 class Sampler:
+    "Sample random location in `smp_areas`."
     def __init__(self, 
-               fname_raster:str, # The path to the raster file.
-               band:int=1, # The band number to use. Defaults to 1.
-               id_name:str='loc_id'
-               ):
-        "Emulate data collection. Provided a set of location, return values sampled from given raster file."
+                 smp_areas:gpd.GeoDataFrame, # Geographical area to sample from.
+                ) -> gpd.GeoDataFrame: # loc_id, geometry (Point or MultiPoint).
         fc.store_attr()
-        with rasterio.open(fname_raster) as src:
-            self.band_data = src.read(band)
-            self.affine = src.transform
-            self.bounds = src.bounds
-
-    def to_geodataframe(self, 
-                        geoseries:gpd.GeoSeries, # The locations
-                        values:List[float] # The sampled values
-                        ) -> gpd.GeoDataFrame: 
-        gdf = geoseries.to_frame(name='geometry').explode(index_parts=False)
-        gdf = gdf.assign(value=values)
-        return gdf.reset_index(names=self.id_name)
-    
+        
+    @property
+    def loc_ids(self):
+        arr = self.smp_areas.reset_index().loc_id.values
+        if len(arr) != len(np.unique(arr)):
+            raise ValueError(f'{self.loc_id_col} column contains non-unique values.')
+        else:
+            return arr
+        
     def sample(self, 
-               geoseries:gpd.GeoSeries # The locations
-               ) -> gpd.GeoDataFrame:
-        coords = [(x, y) for x, y in geoseries.get_coordinates().values]
-        pixel_coords = [transform.rowcol(self.affine, *pair) for pair in coords]
-        values = [self.band_data[int(x), int(y)] for (x, y) in pixel_coords]
-        return self.to_geodataframe(geoseries, values)
+               n:np.ndarray, # Number of samples
+               **kwargs
+              ):
+        mask = n == 0    
+        pts_gseries = self.smp_areas[~mask].sample_points(n[~mask], **kwargs)
+        gdf_pts = gpd.GeoDataFrame(geometry=pts_gseries, index=pts_gseries.index)
+        gdf_pts.index.name = 'loc_id'
+        return gdf_pts

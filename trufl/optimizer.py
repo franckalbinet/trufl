@@ -7,7 +7,6 @@ __all__ = ['Optimizer']
 import numpy as np
 from .mcdm import score, normalize, weigh
 
-
 # %% ../nbs/02_optimizer.ipynb 4
 class Optimizer:
     def __init__(self, state):

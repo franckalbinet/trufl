@@ -46,10 +46,9 @@ def gridder(
     fname_raster:str, # The path to the raster file.
     band:int=1, # The band number to use. Defaults to 1.
     nrows:int=10, # The number of rows in the grid. Defaults to 10.
-    ncols:int=10 # The number of columns in the grid. Defaults to 10.
-    ) -> gpd.GeoDataFrame: # A GeoDataFrame of the grid cells, with a 'loc_id' column for the cell index.
+    ncols:int=10, # The number of columns in the grid. Defaults to 10.
+    ) -> gpd.GeoDataFrame: # A GeoDataFrame of the grid cells geometry with 'loc_id' as index.
     "Generate a grid of polygons overlaid on a raster file."
-    
     with rasterio.open(fname_raster) as f:
         raster = f.read(band)
         bounds = f.bounds
@@ -86,10 +85,11 @@ def gridder(
 
     # Intersect the grid with the polygon
     gdf = gpd.overlay(grid, gdf_polygon, how='intersection').reset_index()
-    gdf = gdf.drop(0, axis=1)
-    return gdf.rename(columns={'index': 'loc_id'})
+    gdf = gdf.drop(0, axis=1).set_index('index')
+    gdf.index.name = 'loc_id'
+    return gdf
 
-# %% ../nbs/03_utils.ipynb 7
+# %% ../nbs/03_utils.ipynb 6
 def anonymize_raster(fname_raster:str, # The path to the raster file.
                      new_lon_origin:float, # Longitude of the new origin
                      new_lat_origin:float, # Latitude of the new origin
