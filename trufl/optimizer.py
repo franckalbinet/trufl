@@ -3,105 +3,45 @@
 # %% auto 0
 __all__ = ['Optimizer']
 
-# %% ../nbs/02_optimizer.ipynb 3
+# %% ../nbs/02_optimizer.ipynb 2
 import numpy as np
+from fastcore.basics import patch
+from nbdev.showdoc import *
 from .mcdm import score, normalize, weigh
 
-# %% ../nbs/02_optimizer.ipynb 4
+# %% ../nbs/02_optimizer.ipynb 3
 class Optimizer:
     def __init__(self, state):
         "Optimize the number of points for t. Provided the number of points to sample in t based on t-1, return values number of sample points."
         self.state = state
+        
+        self.matrix = state.to_numpy()
         return
+
+# %% ../nbs/02_optimizer.ipynb 4
+@patch
+def rank(self:Optimizer, is_benefit_x:list, w_vector:list,  n_method:str=None, c_method:str = None, w_method:str=None, s_method:str=None):
     
-        
-    def build_matrix(self, polygon_list):
-        "Build the matrix for the optimization"
-        import numpy as np
-        matrix = []
-        self.list_id = polygon_list
-        for polygon in polygon_list:
-            print("Polygon:", polygon)
-            polygon_state = self.state.get(loc_id=polygon, as_numpy=False)
-            print("Polygon State:", polygon_state)
-            values = [var.value for var in polygon_state]
-            print("Values:", values)
-            matrix.append(values)
-            
-        decision_matrix = np.vstack(matrix)
-        # build matrix with columns based on the needed criteria
-        
-        self.matrix = decision_matrix
-        
-        return decision_matrix
-        
-    def process_matrix(self, matrix, benefit_criteria):
-        
-        # convert the NAN values in matrix to 0 or 1 based on the value in the benefit_criteria list.
-        # If the value of the first element is True then convert nan in the first column to 1
-        # If the value of the first element is False then convert nan in the first column to 0
-        # Do this for all elements in benefit_criteria and also columns of matrix
-        for i, is_benefit in enumerate(benefit_criteria):
-            if is_benefit:
-                matrix[:, i][np.isnan(matrix[:, i])] = 1
-                print("Benefit:", i)
-            else:
-                matrix[:, i][np.isnan(matrix[:, i])] = 0
-                print("Cost:", i)
-
-        return matrix
-        
-    def rank(self,
-        x_matrix,
-        alt_names=None,
-        is_benefit_x=None,
-        n_method=None,
-        w_vector=None,
-        c_method=None,
-        w_method="MW",
-        s_method="SAW",
-    ):
-        """
-        Return the ranking of the alternatives, in descending order, using the
-        selected methods.
-        """
-        # Perform sanity checks
-        x_matrix = np.array(x_matrix, dtype=np.float64)
-        
-        if alt_names is None:
-            alt_names = ["" + str(i + 1) for i in range(x_matrix.shape[0])]
-            
-        if len(alt_names) != x_matrix.shape[0]:
-            raise ValueError(
-                "The number of names for the alternatives does not match the "
-                + "number of rows in the decision matrix",
-            )
-
-        # If not specified, consider all criteria as benefit criteria
-        if is_benefit_x is None:
-            is_benefit_x = [True for _ in range(x_matrix.shape[1])]
-
-        # Normalize the decision matrix using the selected method
-        z_matrix, is_benefit_z = normalize(x_matrix, is_benefit_x, n_method)
-
-        # Determine the weight of each criterion
-        if w_vector is None:
+    # normailize the matrix
+    z_matrix, is_benefit_z = normalize(self.matrix, is_benefit_x, n_method)
+    
+    if w_vector is None:
             # Weigh each criterion using the selected methods
             w_vector = weigh(z_matrix, w_method, c_method)
+    else:
+        pass
 
-        # Score each alternative using the selected method
-        s_vector, desc_order = score(z_matrix, is_benefit_z, w_vector, s_method)
+    s_vector, desc_order = score(z_matrix, is_benefit_z, w_vector, s_method)
+    self.state['value'] = s_vector
+    df = self.state[['value']]
 
-        # Get the indices of the sorted scores
-        if desc_order:
-            r_indices = np.argsort(-s_vector)
-        else:
-            r_indices = np.argsort(s_vector)
-
-        # Create a list of tuples that includes the names of the alternatives and
-        # their corresponding scores in descending order
-        ranking = []
-        for i in range(len(alt_names)):
-            ranking.append((alt_names[r_indices[i]], s_vector[r_indices[i]], i+1))
-        
-        return ranking
+    # Get the indices of the sorted scores
+    if desc_order:
+        df_sorted = df.sort_values(by='value', ascending=False)
+    else:
+        df_sorted = df.sort_values(by='value', ascending=True)
+    
+    df_sorted['rank'] = range(1, len(df_sorted) + 1)
+    df_rank = df_sorted[['rank']]
+    
+    return df_rank
