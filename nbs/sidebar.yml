@@ -1,8 +1,8 @@
 website:
   sidebar:
     contents:
-      - ./tutorials/quick-start.ipynb
-      - section: API
+      - index.ipynb
+      - section: Source code
         contents:
           - 00_reader.ipynb
           - 01_sampler.ipynb
