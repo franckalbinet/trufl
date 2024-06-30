@@ -10,4 +10,5 @@ website:
           - 03_utils.ipynb
           - 04_callbacks.ipynb
           - 05_mcdm.ipynb
+          - 06_collector.ipynb
           
