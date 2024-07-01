@@ -29,14 +29,90 @@ applied to nuclear remedation at KU Leuven.
 
 ## Getting started
 
-### Create a vector grid from a given raster
+In highly sensitive and high-stakes situations, it is **essential that
+decision making is informed, transparent, and accountable**, with
+decisions being based on a thorough and objective analysis of the
+available data and the needs and concerns of affected communities being
+taken into account.
+
+Given the time constraints and limited budgets that are often associated
+with data surveys (in particular ones supposed to informed highligh
+sensitive situation), it is **crucial to make informed decisions about
+how to allocate resources**. This is even more important when
+considering the many variables that can be taken into account, such as
+prior knowledge of the area, health and economic impacts, land use,
+whether remediation has already taken place, population density, and
+more. Our approach leverages Linear Programming techniques such as
+**Multiple-criteria decision-making** to optimize the data survey
+workflow:
+
+In this demo, we will walk you through a **typical workflow** using the
+`Trufl` package. To help illustrate the process, we will use a “toy”
+dataset that represents a typical spatial pattern of soil contaminants.
+
+1.  We **assume that we have access to the ground truth**, which is a
+    raster file that shows the spatial distribution of a soil
+    contaminant;
+2.  We will make decisions about how to sample and how much at
+    **administrative units**, which in this case are **simulated as a
+    grid** (using the
+    [`gridder`](https://franckalbinet.github.io/trufl/utils.html#gridder)
+    utilities function);
+3.  Based on prior knowledge of the phenomenon of interest, such as
+    prior airborne surveys or other data, an
+    [`Optimizer`](https://franckalbinet.github.io/trufl/optimizer.html#optimizer)
+    will **rank each grid cell according to its priority for sampling**;
+4.  We will then **perform random sampling on the designated grid
+    cells** (using a
+    [`Sampler`](https://franckalbinet.github.io/trufl/sampler.html#sampler)).
+    To simulate the measurement process, we will use the ground truth to
+    emulate measurements at each location (using a
+    [`DataCollector`](https://franckalbinet.github.io/trufl/collector.html#datacollector));
+5.  We will **evaluate the new state of each cell based on the
+    measurements** and **pass it to a new round of optimization**. This
+    process will be repeated iteratively to refine the sampling
+    strategy.
+
+### Imports
+
+``` python
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+import rasterio
+import geopandas as gpd
+
+from trufl.utils import gridder
+from trufl.sampler import Sampler
+from trufl.collector import DataCollector
+from trufl.callbacks import (State, MaxCB, MinCB, StdCB, CountCB, MoranICB, PriorCB)
+from trufl.optimizer import Optimizer
+
+red, black = '#BF360C', '#263238'
+```
+
+### Our simulated ground truth
+
+The assumed ground truth reveals a typical spatial pattern of
+contaminant such as `Cs137` after a nuclear accident for instance.
 
 ``` python
 fname_raster = './files/ground-truth-01-4326-simulated.tif'
-gdf_grid = gridder(fname_raster, nrows=10, ncols=10)
+with rasterio.open(fname_raster) as src:
+    plt.axis('off')
+    plt.imshow(src.read(1))
 ```
 
+![](index_files/figure-commonmark/cell-3-output-1.png)
+
+### Simulate administrative units
+
+The sampling strategy will be determined on a per-grid-cell basis within
+the administrative unit. We define below a 10 x 10 grid over the area of
+interest:
+
 ``` python
+gdf_grid = gridder(fname_raster, nrows=10, ncols=10)
 gdf_grid.head()
 ```
 
@@ -68,13 +144,182 @@ gdf_grid.head()
 
 </div>
 
+> [!TIP]
+>
+> Note how each administrative unit is uniquely identified by its
+> `loc_id`.
+
 ``` python
-gdf_grid.boundary.plot(color=black, lw=0.5);
+gdf_grid.boundary.plot(color=black, lw=0.5)
+plt.axis('off');
 ```
 
-![](index_files/figure-commonmark/cell-4-output-1.png)
+![](index_files/figure-commonmark/cell-5-output-1.png)
 
-### Random sampling in areas of interest
+### What prior knowledge do we have?
+
+At the initial time $t_0$, data sampling has not yet begun, but we can
+often **leverage existing prior knowledge of our phenomenon** of
+interest to inform our sampling strategy/policy. In the context of
+nuclear remediation, this prior knowledge can often be obtained through
+mobile surveys, such as airborne or carborne surveys, which can provide
+a **coarse estimation** of soil contamination levels.
+
+In the example below, we **simulate prior information about the soil
+property of interest by calculating the average value of the property
+over each grid cell**.
+
+At this stage, we have no measurements, so we simply create an empty
+[Geopandas
+GeoDataFrame](https://geopandas.org/en/stable/docs/reference/api/geopandas.GeoDataFrame.html).
+
+``` python
+samples_t0 = gpd.GeoDataFrame(index=pd.Index([], name='loc_id'), 
+                              geometry=None, data={'value': None})
+```
+
+> [!TIP]
+>
+> We need to set an index `loc_id` and have a `geometry` and `value`
+> columns.
+
+Now we get/“sense” the state of our grid cells based on the simulated
+prior (Mean over each grid cell
+[`PriorCB`](https://franckalbinet.github.io/trufl/callbacks.html#priorcb)):
+
+``` python
+state = State(samples_t0, gdf_grid, cbs=[PriorCB(fname_raster)])
+
+# You have to call the instance
+state_t0 = state(); state_t0.head()
+```
+
+<div>
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|        | Prior    |
+|--------|----------|
+| loc_id |          |
+| 0      | 0.102492 |
+| 1      | 0.125727 |
+| 2      | 0.161802 |
+| 3      | 0.184432 |
+| 4      | 0.201405 |
+
+</div>
+
+</div>
+
+> [!TIP]
+>
+> We get the `Prior` for each individual `loc_id` (here only the first 5
+> shown). The current
+> [`State`](https://franckalbinet.github.io/trufl/callbacks.html#state)
+> is only composed of a single
+> [`PriorCB`](https://franckalbinet.github.io/trufl/callbacks.html#priorcb)
+> variable but can include many more variables as we will see below.
+
+### Optimize sampling based on prior at $t_0$
+
+``` python
+# Bugs?
+#   - fails when ran twice
+#   - `rank` is already a method of a pandas dataframe
+
+benefit_criteria = [True]
+optimizer = Optimizer(state=state_t0)
+df_rank = optimizer.rank(is_benefit_x=benefit_criteria, w_vector = [1],  
+                         n_method=None, c_method = None, 
+                         w_method=None, s_method="CP")
+
+df_rank.head()
+```
+
+<div>
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|        | rank |
+|--------|------|
+| loc_id |      |
+| 92     | 1    |
+| 93     | 2    |
+| 91     | 3    |
+| 94     | 4    |
+| 82     | 5    |
+
+</div>
+
+</div>
+
+``` python
+gdf_grid.join(df_rank, how='left').plot(column='rank',
+                                        cmap='viridis_r', 
+                                        legend_kwds={'label': 'Rank'}, 
+                                        legend=True)
+plt.axis('off');
+```
+
+![](index_files/figure-commonmark/cell-9-output-1.png)
+
+### Start sampling
+
+> [!TIP]
+>
+> It’s worth noting that in the absence of any prior knowledge, a
+> uniform sampling strategy over the area of interest may be used.
+> However, this approach may not be the most efficient use of the
+> available data collection and analysis budget.
+
+WIP …
+
+``` python
+ranks = df_rank['rank'].sort_index().values; ranks
+```
+
+    array([100,  97,  93,  91,  87,  85,  81,  76,  78,  74,  99,  98,  92,
+            90,  84,  75,  70,  68,  67,  61,  96,  94,  88,  82,  77,  66,
+            58,  55,  57,  54,  95,  89,  83,  73,  65,  50,  37,  21,  28,
+            49,  86,  79,  71,  62,  41,  20,  13,   8,  22,  46,  80,  69,
+            51,  42,  30,  19,  14,  16,  36,  59,  72,  60,  38,  43,  35,
+            26,  32,  39,  56,  64,  63,  47,  23,  29,  24,  25,  27,  34,
+            52,  53,  33,  12,   5,   7,   6,  11,  15,  18,  40,  44,   9,
+             3,   1,   2,   4,  10,  17,  31,  48,  45])
+
+``` python
+ranks.sum()
+```
+
+    5050
+
+``` python
+df_rank['rank'].sum()
+```
+
+    5050
 
 Generating a random set of points within a given: - a geodataframe of
 polygons of interest (in this example just a grid with `loc_id`s); - For
@@ -82,23 +327,62 @@ each subarea (`loc_id`), we specify the number of measurements to be
 taken, which we simulate here by generating random numbers.
 
 ``` python
+sample_locs
+```
+
+<div>
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|        | geometry                                          |
+|--------|---------------------------------------------------|
+| loc_id |                                                   |
+| 0      | MULTIPOINT ((-1.22206 43.26132), (-1.21164 43.... |
+| 1      | MULTIPOINT ((-1.22202 43.27012), (-1.22105 43.... |
+| 2      | MULTIPOINT ((-1.22306 43.28557), (-1.22286 43.... |
+| 3      | MULTIPOINT ((-1.22268 43.29206), (-1.22066 43.... |
+| 4      | MULTIPOINT ((-1.22330 43.29855), (-1.22229 43.... |
+| ...    | ...                                               |
+| 95     | MULTIPOINT ((-1.08322 43.31068), (-1.08257 43.... |
+| 96     | MULTIPOINT ((-1.08652 43.32002), (-1.08610 43.... |
+| 97     | MULTIPOINT ((-1.08501 43.32808), (-1.08430 43.... |
+| 98     | POINT (-1.08481 43.33833)                         |
+| 99     | MULTIPOINT ((-1.08509 43.34909), (-1.08365 43.... |
+
+<p>100 rows × 1 columns</p>
+</div>
+
+</div>
+
+``` python
 sampler = Sampler(gdf_grid)
 n = np.random.randint(1, high=10, size=len(gdf_grid), dtype=int)
-sample_locs = sampler.sample(n, method='uniform')
 
+sample_locs = sampler.sample(n, method='uniform')
 print(sample_locs.head())
 sample_locs.plot(markersize=2, color=red);
 ```
 
                                                      geometry
     loc_id                                                   
-    0       MULTIPOINT ((-1.22182 43.26138), (-1.22158 43....
-    1       MULTIPOINT ((-1.21672 43.27361), (-1.21541 43....
-    2                               POINT (-1.21801 43.27919)
-    3       MULTIPOINT ((-1.22264 43.29411), (-1.22207 43....
-    4       MULTIPOINT ((-1.21371 43.29700), (-1.21006 43....
+    0       MULTIPOINT ((-1.22206 43.26132), (-1.21164 43....
+    1       MULTIPOINT ((-1.22202 43.27012), (-1.22105 43....
+    2       MULTIPOINT ((-1.22306 43.28557), (-1.22286 43....
+    3       MULTIPOINT ((-1.22268 43.29206), (-1.22066 43....
+    4       MULTIPOINT ((-1.22330 43.29855), (-1.22229 43....
 
-![](index_files/figure-commonmark/cell-5-output-2.png)
+![](index_files/figure-commonmark/cell-15-output-2.png)
 
 ### Emulating data collection
 
@@ -107,14 +391,6 @@ field to take measurements. In our case, we “emulate” this process by
 “extracting” measurements from provided raster file.
 
 We will emulate data collection from the raster shown below:
-
-``` python
-with rasterio.open(fname_raster) as src:
-    plt.axis('off')
-    plt.imshow(src.read(1))
-```
-
-![](index_files/figure-commonmark/cell-6-output-1.png)
 
 “Measuring” variable of interest from a given raster:
 
@@ -129,13 +405,13 @@ gdf_grid.boundary.plot(color=black, ax=ax);
 
                              geometry     value
     loc_id                                     
-    0       POINT (-1.22182 43.26138)  0.137890
-    0       POINT (-1.22158 43.26741)  0.124069
-    0       POINT (-1.21942 43.26181)  0.141608
-    0       POINT (-1.21880 43.26477)  0.145231
-    0       POINT (-1.21376 43.26352)  0.104063
+    0       POINT (-1.22206 43.26132)  0.136230
+    0       POINT (-1.21164 43.26753)  0.079168
+    0       POINT (-1.21018 43.26824)  0.070453
+    1       POINT (-1.22202 43.27012)  0.107986
+    1       POINT (-1.22105 43.26999)  0.125664
 
-![](index_files/figure-commonmark/cell-7-output-2.png)
+![](index_files/figure-commonmark/cell-16-output-2.png)
 
 ### Getting current state
 

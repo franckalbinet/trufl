@@ -6,6 +6,11 @@ format:
     theme: cosmo
     css: styles.css
     toc: true
+    code-tools: true
+    code-block-bg: true
+    code-block-border-left: "#31BAE9"
+    highlight-style: arrow
+    
 
 website:
   twitter-card: true
