@@ -54,8 +54,8 @@ dataset that represents a typical spatial pattern of soil contaminants.
     raster file that shows the spatial distribution of a soil
     contaminant;
 2.  We will make decisions about how to sample and how much at
-    **administrative units**, which in this case are **simulated as a
-    grid** (using the
+    **administrative units** level, which in this case are **simulated
+    as a grid** (using the
     [`gridder`](https://franckalbinet.github.io/trufl/utils.html#gridder)
     utilities function);
 3.  Based on prior knowledge of the phenomenon of interest, such as
@@ -83,7 +83,7 @@ import rasterio
 import geopandas as gpd
 
 from trufl.utils import gridder
-from trufl.sampler import Sampler
+from trufl.sampler import Sampler, rank_to_sample
 from trufl.collector import DataCollector
 from trufl.callbacks import (State, MaxCB, MinCB, StdCB, CountCB, MoranICB, PriorCB)
 from trufl.optimizer import Optimizer
@@ -236,13 +236,12 @@ state_t0 = state(); state_t0.head()
 ``` python
 # Bugs?
 #   - fails when ran twice
-#   - `rank` is already a method of a pandas dataframe
 
 benefit_criteria = [True]
 optimizer = Optimizer(state=state_t0)
-df_rank = optimizer.rank(is_benefit_x=benefit_criteria, w_vector = [1],  
-                         n_method=None, c_method = None, 
-                         w_method=None, s_method="CP")
+df_rank = optimizer.get_rank(is_benefit_x=benefit_criteria, w_vector = [1],  
+                             n_method=None, c_method = None, 
+                             w_method=None, s_method="CP")
 
 df_rank.head()
 ```
@@ -294,124 +293,73 @@ plt.axis('off');
 > However, this approach may not be the most efficient use of the
 > available data collection and analysis budget.
 
-WIP …
+Based on the **ranks (sampling priority)** calculated by the
+[`Optimizer`](https://franckalbinet.github.io/trufl/optimizer.html#optimizer)
+and given sampling **budget**, let’s calculate the number of samples to
+be collected for each administrative unit (`loc_id`):
 
 ``` python
-ranks = df_rank['rank'].sort_index().values; ranks
+n = rank_to_sample(df_rank['rank'].sort_index().values, 
+                   budget=300, min=1); n
 ```
 
-    array([100,  97,  93,  91,  87,  85,  81,  76,  78,  74,  99,  98,  92,
-            90,  84,  75,  70,  68,  67,  61,  96,  94,  88,  82,  77,  66,
-            58,  55,  57,  54,  95,  89,  83,  73,  65,  50,  37,  21,  28,
-            49,  86,  79,  71,  62,  41,  20,  13,   8,  22,  46,  80,  69,
-            51,  42,  30,  19,  14,  16,  36,  59,  72,  60,  38,  43,  35,
-            26,  32,  39,  56,  64,  63,  47,  23,  29,  24,  25,  27,  34,
-            52,  53,  33,  12,   5,   7,   6,  11,  15,  18,  40,  44,   9,
-             3,   1,   2,   4,  10,  17,  31,  48,  45])
+    array([ 1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+            1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,  1,
+            1,  1,  2,  3,  2,  1,  1,  1,  1,  1,  1,  3,  4,  7,  3,  1,  1,
+            1,  1,  1,  2,  3,  4,  4,  2,  1,  1,  1,  2,  1,  2,  2,  2,  1,
+            1,  1,  1,  1,  3,  2,  2,  2,  2,  2,  1,  1,  2,  5, 12,  8, 10,
+            5,  4,  3,  1,  1,  6, 19, 58, 29, 14,  6,  3,  2,  1,  1])
 
-``` python
-ranks.sum()
-```
-
-    5050
-
-``` python
-df_rank['rank'].sum()
-```
-
-    5050
-
-Generating a random set of points within a given: - a geodataframe of
-polygons of interest (in this example just a grid with `loc_id`s); - For
-each subarea (`loc_id`), we specify the number of measurements to be
-taken, which we simulate here by generating random numbers.
-
-``` python
-sample_locs
-```
-
-<div>
-
-<div>
-<style scoped>
-    .dataframe tbody tr th:only-of-type {
-        vertical-align: middle;
-    }
-&#10;    .dataframe tbody tr th {
-        vertical-align: top;
-    }
-&#10;    .dataframe thead th {
-        text-align: right;
-    }
-</style>
-
-|        | geometry                                          |
-|--------|---------------------------------------------------|
-| loc_id |                                                   |
-| 0      | MULTIPOINT ((-1.22206 43.26132), (-1.21164 43.... |
-| 1      | MULTIPOINT ((-1.22202 43.27012), (-1.22105 43.... |
-| 2      | MULTIPOINT ((-1.22306 43.28557), (-1.22286 43.... |
-| 3      | MULTIPOINT ((-1.22268 43.29206), (-1.22066 43.... |
-| 4      | MULTIPOINT ((-1.22330 43.29855), (-1.22229 43.... |
-| ...    | ...                                               |
-| 95     | MULTIPOINT ((-1.08322 43.31068), (-1.08257 43.... |
-| 96     | MULTIPOINT ((-1.08652 43.32002), (-1.08610 43.... |
-| 97     | MULTIPOINT ((-1.08501 43.32808), (-1.08430 43.... |
-| 98     | POINT (-1.08481 43.33833)                         |
-| 99     | MULTIPOINT ((-1.08509 43.34909), (-1.08365 43.... |
-
-<p>100 rows × 1 columns</p>
-</div>
-
-</div>
+We can now decide where to sample based on this sampling schema:
 
 ``` python
 sampler = Sampler(gdf_grid)
-n = np.random.randint(1, high=10, size=len(gdf_grid), dtype=int)
+sample_locs_t0 = sampler.sample(n, method='uniform')
 
-sample_locs = sampler.sample(n, method='uniform')
-print(sample_locs.head())
-sample_locs.plot(markersize=2, color=red);
+print(sample_locs_t0.head())
+ax = sample_locs_t0.plot(markersize=2, color=red)
+
+gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax)
+plt.axis('off');
 ```
 
-                                                     geometry
-    loc_id                                                   
-    0       MULTIPOINT ((-1.22206 43.26132), (-1.21164 43....
-    1       MULTIPOINT ((-1.22202 43.27012), (-1.22105 43....
-    2       MULTIPOINT ((-1.22306 43.28557), (-1.22286 43....
-    3       MULTIPOINT ((-1.22268 43.29206), (-1.22066 43....
-    4       MULTIPOINT ((-1.22330 43.29855), (-1.22229 43....
+                             geometry
+    loc_id                           
+    0       POINT (-1.22083 43.26342)
+    1       POINT (-1.22006 43.27588)
+    2       POINT (-1.21642 43.28474)
+    3       POINT (-1.21536 43.29169)
+    4       POINT (-1.20880 43.30279)
 
-![](index_files/figure-commonmark/cell-15-output-2.png)
+![](index_files/figure-commonmark/cell-11-output-2.png)
 
-### Emulating data collection
+### Emulating data collection and analysis
 
-With random sampling location defined, data collector should be to the
-field to take measurements. In our case, we “emulate” this process by
-“extracting” measurements from provided raster file.
-
-We will emulate data collection from the raster shown below:
+The data collector collects measurements at the random sampling
+locations in the field. In our case, we emulate this process by
+extracting measurements from the provided raster file.
 
 “Measuring” variable of interest from a given raster:
 
 ``` python
 dc_emulator = DataCollector(fname_raster)
-samples_t0 = dc_emulator.collect(sample_locs)
+samples_t0 = dc_emulator.collect(sample_locs_t0)
 
 print(samples_t0.head())
 ax = samples_t0.plot(column='value', s=2, legend=True)
-gdf_grid.boundary.plot(color=black, ax=ax);
+gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax);
+plt.axis('off');
 ```
 
                              geometry     value
     loc_id                                     
-    0       POINT (-1.22206 43.26132)  0.136230
-    0       POINT (-1.21164 43.26753)  0.079168
-    0       POINT (-1.21018 43.26824)  0.070453
-    1       POINT (-1.22202 43.27012)  0.107986
-    1       POINT (-1.22105 43.26999)  0.125664
+    0       POINT (-1.22083 43.26342)  0.144753
+    1       POINT (-1.22006 43.27588)  0.149566
+    2       POINT (-1.21642 43.28474)  0.174893
+    3       POINT (-1.21536 43.29169)  0.192808
+    4       POINT (-1.20880 43.30279)  0.208858
 
-![](index_files/figure-commonmark/cell-16-output-2.png)
+![](index_files/figure-commonmark/cell-12-output-2.png)
 
 ### Getting current state
 

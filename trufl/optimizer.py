@@ -20,7 +20,9 @@ class Optimizer:
 
 # %% ../nbs/02_optimizer.ipynb 4
 @patch
-def rank(self:Optimizer, is_benefit_x:list, w_vector:list,  n_method:str=None, c_method:str = None, w_method:str=None, s_method:str=None):
+def get_rank(self:Optimizer, is_benefit_x:list, w_vector:list,  
+         n_method:str=None, c_method:str = None, 
+         w_method:str=None, s_method:str=None):
     
     # normailize the matrix
     z_matrix, is_benefit_z = normalize(self.matrix, is_benefit_x, n_method)
