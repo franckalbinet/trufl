@@ -7,6 +7,7 @@ __all__ = ['Sampler', 'rank_to_sample']
 import rasterio
 import fastcore.all as fc
 import geopandas as gpd
+import pandas as pd
 import numpy as np
 
 # %% ../nbs/01_sampler.ipynb 5
@@ -38,10 +39,33 @@ class Sampler:
 # %% ../nbs/01_sampler.ipynb 9
 def rank_to_sample(ranks:np.ndarray, # Ranks sorted by `loc_id`s
                    budget:int, # Total data collection budget available
-                   min:int=0 # Minimum of samples to be collected per area of interest
+                   min:int=0, # Minimum of samples to be collected per area of interest
+                  policy:str="Weighted" # policy used form mapping ranks to number of samples
                   ) -> np.ndarray: # Number of samples per area of interest to be collected in the same order as ranks
     "Map ranks to number of samples to be collected"
-    weights = 1/ranks
-    normalized_weights = np.array(weights) / np.sum(weights)
-    allocation = np.round(budget * normalized_weights).astype(int)
-    return np.where(allocation < min, min, allocation)
+    if policy == "Weighted":
+        weights = 1/ranks
+        normalized_weights = np.array(weights) / np.sum(weights)
+        allocation = np.round(budget * normalized_weights).astype(int)
+        return np.where(allocation < min, min, allocation)
+    
+    elif policy == "quantiles":
+        # 4. Sampling policy (based on 4 quantiles of rank)
+        n_quantile = len(ranks)/4
+        sampling_policy = [int(budget*0.5/n_quantile), int(budget*0.3/n_quantile), int(budget*0.20/n_quantile), 0]
+
+        # Calculate quantiles thresholds
+        quantiles_thresholds = np.quantile(ranks, [0.25, 0.5, 0.75, 1.0])
+        
+        # Assign each rank to a quantile
+        quantile_indices = np.digitize(ranks, quantiles_thresholds, right=True)
+        
+        # Map each quantile to its corresponding value in sampling_policy
+        samples_per_quantile = np.array([sampling_policy[i] for i in quantile_indices])
+        
+        # Ensure minimum samples collected per area
+        samples_per_quantile = np.where(samples_per_quantile < min, min, samples_per_quantile)
+        
+        return samples_per_quantile
+    else:
+        raise ValueError(f'Policy {policy} not implemented.')
