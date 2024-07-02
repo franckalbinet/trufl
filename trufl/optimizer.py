@@ -27,6 +27,13 @@ def get_rank(self:Optimizer, is_benefit_x:list, w_vector:list,
     # normailize the matrix
     z_matrix, is_benefit_z = normalize(self.matrix, is_benefit_x, n_method)
     
+     # replace nan values with 0 if cost and & 1 if benefit
+    for i, is_benefit in enumerate(is_benefit_z):
+        if is_benefit:
+            z_matrix[:, i][np.isnan(z_matrix[:, i])] = 1
+        else:
+            z_matrix[:, i][np.isnan(z_matrix[:, i])] = 0
+
     if w_vector is None:
             # Weigh each criterion using the selected methods
             w_vector = weigh(z_matrix, w_method, c_method)
