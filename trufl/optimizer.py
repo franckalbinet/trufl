@@ -5,13 +5,16 @@ __all__ = ['Optimizer']
 
 # %% ../nbs/02_optimizer.ipynb 2
 import numpy as np
+import pandas as pd
 from fastcore.basics import patch
 from nbdev.showdoc import *
 from .mcdm import score, normalize, weigh
 
 # %% ../nbs/02_optimizer.ipynb 3
 class Optimizer:
-    def __init__(self, state):
+    def __init__(self,
+                 state:pd.DataFrame # a dataframe with the state of the administrative boundaries
+                 ):
         "Optimize the number of points for t. Provided the number of points to sample in t based on t-1, return values number of sample points."
         self.state = state
         
@@ -20,10 +23,15 @@ class Optimizer:
 
 # %% ../nbs/02_optimizer.ipynb 4
 @patch
-def get_rank(self:Optimizer, is_benefit_x:list, w_vector:list,  
-         n_method:str=None, c_method:str = None, 
-         w_method:str=None, s_method:str=None):
-    
+def get_rank(self:Optimizer, 
+             is_benefit_x:list,
+             w_vector:list,  
+            n_method:str=None,
+            c_method:str =None, 
+            w_method:str=None,
+            s_method:str=None
+            ):
+    "Determines the rank of the administrative polygon based on the provided states."
     # normailize the matrix
     z_matrix, is_benefit_z = normalize(self.matrix, is_benefit_x, n_method)
     

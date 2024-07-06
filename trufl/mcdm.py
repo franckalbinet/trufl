@@ -10,7 +10,7 @@ __all__ = ['is_normalized_matrix', 'is_normalized_vector', 'check_scoring_input'
 import numpy as np
 
 # %% ../nbs/05_mcdm.ipynb 3
-def is_normalized_matrix(z_matrix):
+def is_normalized_matrix(z_matrix: np.array):
     """
     Return a Boolean value to indicate whether the matrix is normalized or not
     """
@@ -20,21 +20,16 @@ def is_normalized_matrix(z_matrix):
     )
 
 # %% ../nbs/05_mcdm.ipynb 4
-def is_normalized_vector(w_vector):
-    """
-    Return a Boolean value to indicate whether the vector is normalized or not
-    """
+def is_normalized_vector(w_vector: list):
+    "Return a Boolean value to indicate whether the vector is normalized or not"
     return (
         np.sum(np.less(w_vector, 0.0)) == 0
         and np.isclose(np.sum(w_vector), 1.0)
     )
 
 # %% ../nbs/05_mcdm.ipynb 5
-def check_scoring_input(z_matrix, w_vector, is_benefit_z, s_method):
-    """
-    Raise an exception if any argument is inappropriate for the corresponding
-    scoring method
-    """
+def check_scoring_input(z_matrix:np.array, w_vector:list, is_benefit_z:list, s_method:str):
+    "Raise an exception if any argument is inappropriate for the corresponding scoring method"
     if s_method.upper() in {"SAW", "MEW", "TOPSIS", "MTOPSIS", "CP"}:
         if not is_normalized_matrix(z_matrix):
             raise ValueError(
@@ -61,11 +56,8 @@ def check_scoring_input(z_matrix, w_vector, is_benefit_z, s_method):
         raise ValueError("Unknown scoring method ({})".format(s_method))
 
 # %% ../nbs/05_mcdm.ipynb 6
-def check_weighting_input(z_matrix, c_method, w_method):
-    """
-    Raise an exception if any argument is inappropriate for the corresponding
-    weighting method
-    """
+def check_weighting_input(z_matrix:np.array, c_method:str, w_method:str):
+    "Raise an exception if any argument is inappropriate for the corresponding weighting method"
     if w_method.upper() in {"MW", "EM", "SD", "CRITIC", "VIC"}:
         if not is_normalized_matrix(z_matrix):
             raise ValueError(
@@ -106,11 +98,8 @@ def check_weighting_input(z_matrix, c_method, w_method):
         raise ValueError("Unknown weighting method ({})".format(w_method))
 
 # %% ../nbs/05_mcdm.ipynb 7
-def check_normalization_input(x_matrix, is_benefit_x, n_method):
-    """
-    Raise an exception if any argument is inappropriate for the corresponding
-    normalization method
-    """
+def check_normalization_input(x_matrix:np.array, is_benefit_x:list, n_method:str):
+    "Raise an exception if any argument is inappropriate for the corresponding normalization method"
     if (
         n_method is None
         or n_method.upper() in {"LINEAR1", "LINEAR2", "LINEAR3", "VECTOR"}
@@ -138,21 +127,16 @@ def check_normalization_input(x_matrix, is_benefit_x, n_method):
         raise ValueError("Unknown normalization method ({})".format(n_method))
 
 # %% ../nbs/05_mcdm.ipynb 8
-def abspearson(z_matrix):
-    """
-    Return the absolute value of the Pearson correlation coefficients of the
-    provided matrix.
-    """
+def abspearson(z_matrix:np.array):
+    "Return the absolute value of the Pearson correlation coefficients of the provided matrix."
     # Make sure that the provided matrix is a float64 NumPy array
     z_matrix = np.array(z_matrix, dtype=np.float64)
 
     return np.absolute(np.corrcoef(z_matrix, rowvar=False))
 
 # %% ../nbs/05_mcdm.ipynb 9
-def dcor(z_matrix):
-    """
-    Return the distance correlation coefficients of the provided matrix.
-    """
+def dcor(z_matrix:np.array):
+    "Return the distance correlation coefficients of the provided matrix."
     # Make sure that the provided matrix is a float64 NumPy array
     z_matrix = np.array(z_matrix, dtype=np.float64)
 
@@ -193,11 +177,8 @@ def dcor(z_matrix):
     return dcor_matrix
 
 # %% ../nbs/05_mcdm.ipynb 10
-def squared_dcov_matrix(z_matrix):
-    """
-    Return the matrix of squared distance covariance between the columns of
-    the provided matrix.
-    """
+def squared_dcov_matrix(z_matrix:np.array):
+    " Return the matrix of squared distance covariance between the columns of the provided matrix."
     # Initialize the distance covariance matrix
     dcov2_matrix = np.zeros(
         (z_matrix.shape[1], z_matrix.shape[1]),
@@ -229,10 +210,8 @@ def squared_dcov_matrix(z_matrix):
     return dcov2_matrix
 
 # %% ../nbs/05_mcdm.ipynb 11
-def dist_matrix(z_vector):
-    """
-    Return the Euclidean distance matrix of the provided vector.
-    """
+def dist_matrix(z_vector:np.array):
+    "Return the Euclidean distance matrix of the provided vector."
     # Initialize the Euclidean distance matrix
     dmatrix = np.zeros(
         (z_vector.shape[0], z_vector.shape[0]),
@@ -275,10 +254,8 @@ def squared_dcor(jl_dcov2, j_dvar2, l_dvar2):
     return jl_dcov2 / np.sqrt(j_dvar2 * l_dvar2)
 
 # %% ../nbs/05_mcdm.ipynb 12
-def pearson(z_matrix):
-    """
-    Return the Pearson correlation coefficients of the provided matrix.
-    """
+def pearson(z_matrix:np.array):
+    "Return the Pearson correlation coefficients of the provided matrix."
     # Make sure that the provided matrix is a float64 NumPy array
     z_matrix = np.array(z_matrix, dtype=np.float64)
 
@@ -286,10 +263,8 @@ def pearson(z_matrix):
 
 
 # %% ../nbs/05_mcdm.ipynb 13
-def correlate(z_matrix, c_method):
-    """
-    Return the selected correlation coefficients of the provided matrix.
-    """
+def correlate(z_matrix:np.array, c_method:str):
+    "Return the selected correlation coefficients of the provided matrix."
     # Use the selected correlation method
     if c_method.upper() == "PEARSON":
         return pearson(z_matrix)
@@ -302,11 +277,8 @@ def correlate(z_matrix, c_method):
 
 
 # %% ../nbs/05_mcdm.ipynb 14
-def em(z_matrix):
-    """
-    Return the weight vector of the provided decision matrix using the Entropy
-    Measure method.
-    """
+def em(z_matrix: np.array):
+    "Return the weight vector of the provided decision matrix using the Entropy Measure method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     check_weighting_input(z_matrix, "", "EM")
@@ -329,11 +301,8 @@ def em(z_matrix):
 
 
 # %% ../nbs/05_mcdm.ipynb 15
-def mw(z_matrix):
-    """
-    Return the weight vector of the provided decision matrix using the Mean
-    Weights method.
-    """
+def mw(z_matrix:np.array):
+    "Return the weight vector of the provided decision matrix using the Mean Weights method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     check_weighting_input(z_matrix, "", "MW")
@@ -346,10 +315,7 @@ def mw(z_matrix):
 
 # %% ../nbs/05_mcdm.ipynb 16
 def sd(z_matrix):
-    """
-    Return the weight vector of the provided decision matrix using the
-    Standard Deviation method.
-    """
+    "Return the weight vector of the provided decision matrix using the Standard Deviation method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     check_weighting_input(z_matrix, "", "SD")
@@ -363,11 +329,8 @@ def sd(z_matrix):
 
 
 # %% ../nbs/05_mcdm.ipynb 17
-def vic(z_matrix, c_method="dCor"):
-    """
-    Return the weight vector of the provided decision matrix using the
-    Variability and Interdependencies of Criteria method.
-    """
+def vic(z_matrix:np.array, c_method:str="dCor"):
+    "Return the weight vector of the provided decision matrix using the Variability and Interdependencies of Criteria method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     if c_method is None:
@@ -391,11 +354,8 @@ def vic(z_matrix, c_method="dCor"):
 
 
 # %% ../nbs/05_mcdm.ipynb 18
-def linear1(x_matrix, is_benefit_x):
-    """
-    Return the normalized version of the provided matrix using the Linear
-    Normalization (1) method.
-    """
+def linear1(x_matrix:np.array, is_benefit_x:list):
+    "Return the normalized version of the provided matrix using the Linear Normalization (1) method."
     # Perform sanity checks
     x_matrix = np.array(x_matrix, dtype=np.float64)
     check_normalization_input(x_matrix, is_benefit_x, "Linear1")
@@ -427,11 +387,8 @@ def linear1(x_matrix, is_benefit_x):
     return z_matrix, is_benefit_z
 
 # %% ../nbs/05_mcdm.ipynb 19
-def linear2(x_matrix, is_benefit_x):
-    """
-    Return the normalized version of the provided matrix using the Linear
-    Normalization (2) method.
-    """
+def linear2(x_matrix:np.array, is_benefit_x:list):
+    "Return the normalized version of the provided matrix using the Linear Normalization (2) method."
     # Perform sanity checks
     x_matrix = np.array(x_matrix, dtype=np.float64)
     check_normalization_input(x_matrix, is_benefit_x, "Linear2")
@@ -462,11 +419,8 @@ def linear2(x_matrix, is_benefit_x):
 
 
 # %% ../nbs/05_mcdm.ipynb 20
-def linear3(x_matrix, is_benefit_x):
-    """
-    Return the normalized version of the provided matrix using the Linear
-    Normalization (3) method.
-    """
+def linear3(x_matrix:np.array, is_benefit_x:list):
+    "Return the normalized version of the provided matrix using the Linear Normalization (3) method."
     # Perform sanity checks
     x_matrix = np.array(x_matrix, dtype=np.float64)
     check_normalization_input(x_matrix, is_benefit_x, "Linear3")
@@ -489,11 +443,8 @@ def linear3(x_matrix, is_benefit_x):
 
 
 # %% ../nbs/05_mcdm.ipynb 21
-def vector(x_matrix, is_benefit_x):
-    """
-    Return the normalized version of the provided matrix using the Vector
-    Normalization method.
-    """
+def vector(x_matrix:np.array, is_benefit_x:list):
+    "Return the normalized version of the provided matrix using the Vector Normalization method."
     # Perform sanity checks
     x_matrix = np.array(x_matrix, dtype=np.float64)
     check_normalization_input(x_matrix, is_benefit_x, "Vector")
@@ -517,11 +468,8 @@ def vector(x_matrix, is_benefit_x):
 
 
 # %% ../nbs/05_mcdm.ipynb 22
-def normalize(x_matrix, is_benefit_x, n_method):
-    """
-    Return the normalized version of the provided matrix using the selected
-    normalization method.
-    """
+def normalize(x_matrix:np.array, is_benefit_x:list, n_method:str):
+    "Return the normalized version of the provided matrix using the selected normalization method."
     # Use the selected normalization method
     if n_method is None:
         # Perform sanity checks
@@ -542,11 +490,8 @@ def normalize(x_matrix, is_benefit_x, n_method):
 
 
 # %% ../nbs/05_mcdm.ipynb 23
-def critic(z_matrix, c_method="Pearson"):
-    """
-    Return the weight vector of the provided decision matrix using the
-    Criteria Importance Through Intercriteria Correlation method.
-    """
+def critic(z_matrix:np.array, c_method:str="Pearson"):
+    "Return the weight vector of the provided decision matrix using the Criteria Importance Through Intercriteria Correlation method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     if c_method is None:
@@ -571,11 +516,8 @@ def critic(z_matrix, c_method="Pearson"):
     return imp_vector / np.sum(imp_vector)
 
 # %% ../nbs/05_mcdm.ipynb 24
-def weigh(z_matrix, w_method, c_method=None):
-    """
-    Return the weight vector of the provided decision matrix using the
-    selected weighting method.
-    """
+def weigh(z_matrix:np.array, w_method:str, c_method:str=None):
+    "Return the weight vector of the provided decision matrix using the selected weighting method."
     # Use the selected weighting method
     if w_method.upper() == "MW":
         return mw(z_matrix)
@@ -592,11 +534,8 @@ def weigh(z_matrix, w_method, c_method=None):
 
 
 # %% ../nbs/05_mcdm.ipynb 25
-def topsis(z_matrix, w_vector, is_benefit_z):
-    """
-    Return the Technique for Order Preference by Similarity to Ideal Solution
-    scores of the provided decision matrix with the provided weight vector.
-    """
+def topsis(z_matrix:np.array, w_vector:str, is_benefit_z:list):
+    "Return the Technique for Order Preference by Similarity to Ideal Solution scores of the provided decision matrix with the provided weight vector."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     w_vector = np.array(w_vector, dtype=np.float64)
@@ -637,11 +576,8 @@ def topsis(z_matrix, w_vector, is_benefit_z):
 
 
 # %% ../nbs/05_mcdm.ipynb 26
-def cp(z_matrix, w_vector, is_benefit_z):
-    """
-    Return the Technique for Order Preference by Similarity to Ideal Solution
-    scores of the provided decision matrix with the provided weight vector.
-    """
+def cp(z_matrix:np.array, w_vector:list, is_benefit_z:list):
+    "Return the Technique for Order Preference by Similarity to Ideal Solution scores of the provided decision matrix with the provided weight vector."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     w_vector = np.array(w_vector, dtype=np.float64)
@@ -673,11 +609,8 @@ def cp(z_matrix, w_vector, is_benefit_z):
     return s_vector, desc_order
 
 # %% ../nbs/05_mcdm.ipynb 27
-def score(z_matrix, is_benefit_z, w_vector, s_method):
-    """
-    Return the selected scores of the provided decision matrix with the
-    provided weight vector.
-    """
+def score(z_matrix:np.array, is_benefit_z:list, w_vector:list, s_method:str):
+    "Return the selected scores of the provided decision matrix with the provided weight vector."
     # Use the selected scoring method
     if s_method.upper() == "CP":
         return cp(z_matrix, w_vector, is_benefit_z)
