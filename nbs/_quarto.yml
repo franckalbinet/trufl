@@ -6,6 +6,7 @@ format:
     theme: cosmo
     css: styles.css
     toc: true
+    toc-depth: 4
     code-tools: true
     code-block-bg: true
     code-block-border-left: "#31BAE9"
