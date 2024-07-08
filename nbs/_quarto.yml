@@ -14,7 +14,7 @@ format:
     grid:
       sidebar-width: 180px
       body-width: 980px
-      margin-width: 150px
+      margin-width: 300px
       gutter-width: 1.0rem
 
 website:
