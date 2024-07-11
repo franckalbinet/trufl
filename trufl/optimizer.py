@@ -49,8 +49,9 @@ def get_rank(self:Optimizer,
         pass
 
     s_vector, desc_order = score(z_matrix, is_benefit_z, w_vector, s_method)
-    self.state['value'] = s_vector
-    df = self.state[['value']]
+    state = self.state.copy()
+    state['value'] = s_vector
+    df = state[['value']]
 
     # Get the indices of the sorted scores
     if desc_order:
