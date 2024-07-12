@@ -4,24 +4,25 @@
 
 **Trufl** was initiated in the context of the [IAEA (International
 Atomic Energy Agency)](https://www.iaea.org) Coordinated Research
-Project titled [“Monitoring and Predicting Radionuclide Uptake and
+Project (CRP) titled [“Monitoring and Predicting Radionuclide Uptake and
 Dynamics for Optimizing Remediation of Radioactive Contamination in
 Agriculture”](https://www.iaea.org/newscenter/news/new-crp-monitoring-and-predicting-radionuclide-uptake-and-dynamics-for-optimizing-remediation-of-radioactive-contamination-in-agriculture-crp-d15019).
 
 While **Trufl** was originally developed to address the remediation of
 farmland affected by nuclear accidents, its approach and algorithms are
 **applicable to a wide range of application domains**. This includes
-managing **legacy contaminants or monitoring any phenomenon that
-requires consideration of multiple decision criteria**, potentially
-involving a large set of data.
+managing **legacy contaminants** or monitoring phenomena that require
+consideration of multiple decision criteria over time, taking into
+account a wide range of factors and contexts.
 
 This package leverages the work done by [Floris
 Abrams](https://www.linkedin.com/in/floris-abrams-59080a15a) in the
-context of his PhD a collaboration between [SCK
+context of his PhD in collaboration between [SCK
 CEN](https://www.sckcen.be) and [KU Leuven](https://www.kuleuven.be) and
 [Franck Albinet](https://www.linkedin.com/in/franckalbinet),
 International Consultant in Geospatial Data Science and currently PhD
-researcher in AI applied to nuclear remedation at KU Leuven.
+researcher in AI applied to nuclear remedation at [KU
+Leuven](https://www.kuleuven.be).
 
 ## Install
 
@@ -36,7 +37,7 @@ available data and the needs and concerns of affected communities being
 taken into account.
 
 Given the time constraints and limited budgets that are often associated
-with data surveys (in particular ones supposed to informed highligh
+with data surveys (in particular ones supposed to informed highly
 sensitive situation), it is **crucial to make informed decisions about
 how to allocate resources**. This is even more important when
 considering the many variables that can be taken into account, such as
@@ -91,13 +92,14 @@ red, black = '#BF360C', '#263238'
 ### Our simulated ground truth
 
 The assumed ground truth reveals a typical spatial pattern of
-contaminant such as `Cs137` after a nuclear accident for instance.
+contaminant such as `Cs137` after a nuclear accident for instance:
 
 ``` python
 fname_raster = './files/ground-truth-01-4326-simulated.tif'
 with rasterio.open(fname_raster) as src:
     plt.axis('off')
     plt.imshow(src.read(1))
+    plt.title('Simulated Ground Truth')
 ```
 
 ![](index_files/figure-commonmark/cell-3-output-1.png)
@@ -148,12 +150,15 @@ gdf_grid.head()
 
 ``` python
 gdf_grid.boundary.plot(color=black, lw=0.5)
-plt.axis('off');
+plt.axis('off')
+plt.title('Simulated Administrative Units');
 ```
 
 ![](index_files/figure-commonmark/cell-5-output-1.png)
 
-### What prior knowledge do we have?
+### Round I: Optimize sampling based on prior at $t_0$
+
+#### What prior knowledge do we have?
 
 At the initial time $t_0$, data sampling has not yet begun, but we can
 often **leverage existing prior knowledge of our phenomenon** of
@@ -162,8 +167,8 @@ nuclear remediation, this prior knowledge can often be obtained through
 mobile surveys, such as airborne or carborne surveys, which can provide
 a **coarse estimation** of soil contamination levels.
 
-In the example below, we **simulate prior information about the soil
-property of interest by calculating the average value of the property
+In the example below, we **simulate prior information** about the soil
+property of interest by **calculating the average value of the property
 over each grid cell**.
 
 At this stage, we have no measurements, so we simply create an empty
@@ -218,6 +223,17 @@ state_t0 = state(); state_t0.head()
 
 </div>
 
+``` python
+gdf_grid.join(state_t0, how='left').plot(column='Prior',
+                                         cmap='viridis', 
+                                         legend_kwds={'label': 'Value'}, 
+                                         legend=True)
+plt.axis('off')
+plt.title('Prior: Mean value at Administrative Unit level');
+```
+
+![](index_files/figure-commonmark/cell-8-output-1.png)
+
 <div>
 
 > **Tip**
@@ -228,12 +244,9 @@ state_t0 = state(); state_t0.head()
 
 </div>
 
-### Optimize sampling based on prior at $t_0$
+#### Sampling priority ranks
 
 ``` python
-# Bugs?
-#   - fails when ran twice
-
 benefit_criteria = [True]
 optimizer = Optimizer(state=state_t0)
 df_rank = optimizer.get_rank(is_benefit_x=benefit_criteria, w_vector = [1],  
@@ -267,17 +280,28 @@ df_rank.head()
 
 </div>
 
+<div>
+
+> **Tip**
+>
+> For more information on how the `Optimizer` operates, please see the
+> section [Delving deeper into the optimization
+> process](#delving-deeper-into-the-optimization-process).
+
+</div>
+
 ``` python
 gdf_grid.join(df_rank, how='left').plot(column='rank',
                                         cmap='viridis_r', 
                                         legend_kwds={'label': 'Rank'}, 
                                         legend=True)
-plt.axis('off');
+plt.axis('off')
+plt.title('Sampling Priorirty Rank');
 ```
 
-![](index_files/figure-commonmark/cell-9-output-1.png)
+![](index_files/figure-commonmark/cell-10-output-1.png)
 
-### Start sampling
+#### Informed random sampling
 
 <div>
 
@@ -292,12 +316,13 @@ plt.axis('off');
 
 Based on the **ranks (sampling priority)** calculated by the `Optimizer`
 and given sampling **budget**, let’s calculate the number of samples to
-be collected for each administrative unit (`loc_id`). Different sampling
-policies can be used (Weighted, quantiles):
+be collected for each administrative unit (`loc_id`). **Different
+sampling policies** can be used (Weighted, Quantiles, …):
 
 ``` python
+budget_t0 = 600
 n = rank_to_sample(df_rank['rank'].sort_index().values, 
-                   budget=600, min=1, policy="quantiles"); n
+                   budget=budget_t0, min=1, policy="quantiles"); n
 ```
 
     array([ 1,  1,  1,  1,  1,  1,  1,  1,  1,  4,  1,  1,  1,  1,  1,  4,  4,
@@ -317,20 +342,21 @@ print(sample_locs_t0.head())
 ax = sample_locs_t0.plot(markersize=2, color=red)
 
 gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax)
-plt.axis('off');
+plt.axis('off')
+plt.title('Ranked Random Samples Location');
 ```
 
                              geometry
     loc_id                           
-    0       POINT (-1.21488 43.26374)
-    1       POINT (-1.20866 43.27508)
-    2       POINT (-1.21615 43.28255)
-    3       POINT (-1.21561 43.28812)
-    4       POINT (-1.20971 43.30413)
+    0       POINT (-1.21655 43.26354)
+    1       POINT (-1.21869 43.27371)
+    2       POINT (-1.20881 43.28736)
+    3       POINT (-1.21765 43.29016)
+    4       POINT (-1.21293 43.30053)
 
-![](index_files/figure-commonmark/cell-11-output-2.png)
+![](index_files/figure-commonmark/cell-12-output-2.png)
 
-### Emulating data collection and analysis
+#### Emulating measurement campaign
 
 The data collector collects measurements at the random sampling
 locations in the field. In our case, we emulate this process by
@@ -340,33 +366,60 @@ extracting measurements from the provided raster file.
 
 ``` python
 dc_emulator = DataCollector(fname_raster)
-samples_t0 = dc_emulator.collect(sample_locs_t0)
+measurements_t0 = dc_emulator.collect(sample_locs_t0)
 
-print(samples_t0.head())
-ax = samples_t0.plot(column='value', s=2, legend=True)
+print(measurements_t0.head())
+ax = measurements_t0.plot(column='value', s=2, legend=True)
 gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax);
-plt.axis('off');
+plt.axis('off')
+plt.title('Measurements at Random Sampling Points');
 ```
 
                              geometry     value
     loc_id                                     
-    0       POINT (-1.21488 43.26374)  0.114413
-    1       POINT (-1.20866 43.27508)  0.124780
-    2       POINT (-1.21615 43.28255)  0.174424
-    3       POINT (-1.21561 43.28812)  0.177309
-    4       POINT (-1.20971 43.30413)  0.247483
+    0       POINT (-1.21601 43.26469)  0.124915
+    1       POINT (-1.20900 43.27742)  0.147948
+    2       POINT (-1.22031 43.28623)  0.165716
+    3       POINT (-1.20937 43.28999)  0.193858
+    4       POINT (-1.21847 43.29989)  0.185664
 
-![](index_files/figure-commonmark/cell-12-output-2.png)
+![](index_files/figure-commonmark/cell-13-output-2.png)
 
-### Getting current state
+This marks the **end of our initial measurement efforts**, based on our
+prior knowledge of the phenomenon. **Going forward, we can use the
+additional insights gained during this phase** to enhance our future
+measurements.
+
+### Round II: Optimize sampling with additional insights at $t_1$
+
+For each administrative unit, we now have additional knowledge acquired
+during the previous campaign, in addition to our prior knowledge. **In
+the current round**, the **optimization** of the sampling will be
+**carried out based on** the **maximum**, **minimum**, **standard
+Deviation**, **number of measurements** already conducted, our **prior
+knowledge**, and an estimate of the **presence of spatial trends** or
+spatial correlations (Moran’s I).
+
+<div>
+
+> **Tip**
+>
+> It’s worth noting that you can use any quantitative or qualitative
+> secondary geographical information as a variable in the state, such as
+> population, whether any previous remediation actions have taken place,
+> the economic impact of the contamination, and so on.
+
+</div>
+
+#### Getting administrative units new state
 
 ``` python
-state = State(samples_t0, gdf_grid, cbs=[
-    MaxCB(), MinCB(), StdCB(), CountCB(), MoranICB(k=5), PriorCB(fname_raster)
-])
+state = State(measurements_t0, gdf_grid, cbs=[
+    MaxCB(), MinCB(), StdCB(), CountCB(), MoranICB(k=5), PriorCB(fname_raster)])
+```
 
-# You have to call the instance
-state_t0 = state(); state_t0
+``` python
+state().head()
 ```
 
 <div>
@@ -382,32 +435,158 @@ state_t0 = state(); state_t0
     }
 </style>
 
-|        | Max      | Min      | Standard Deviation | Count | Moran.I  | Prior    |
-|--------|----------|----------|--------------------|-------|----------|----------|
-| loc_id |          |          |                    |       |          |          |
-| 0      | 0.114413 | 0.114413 | 0.000000           | 1     | NaN      | 0.102492 |
-| 1      | 0.124780 | 0.124780 | 0.000000           | 1     | NaN      | 0.125727 |
-| 2      | 0.174424 | 0.174424 | 0.000000           | 1     | NaN      | 0.161802 |
-| 3      | 0.177309 | 0.177309 | 0.000000           | 1     | NaN      | 0.184432 |
-| 4      | 0.247483 | 0.247483 | 0.000000           | 1     | NaN      | 0.201405 |
-| ...    | ...      | ...      | ...                | ...   | ...      | ...      |
-| 95     | 0.893580 | 0.828462 | 0.019361           | 12    | 0.660330 | 0.803670 |
-| 96     | 0.839585 | 0.750345 | 0.024869           | 12    | 0.759447 | 0.763408 |
-| 97     | 0.751225 | 0.671166 | 0.027414           | 7     | 0.706440 | 0.727797 |
-| 98     | 0.704963 | 0.658978 | 0.015093           | 7     | 0.793996 | 0.646002 |
-| 99     | 0.709104 | 0.692435 | 0.006180           | 7     | 0.482015 | 0.655185 |
+|        | Max      | Min      | Standard Deviation | Count | Moran.I | Prior    |
+|--------|----------|----------|--------------------|-------|---------|----------|
+| loc_id |          |          |                    |       |         |          |
+| 0      | 0.124915 | 0.124915 | 0.0                | 1     | NaN     | 0.102492 |
+| 1      | 0.147948 | 0.147948 | 0.0                | 1     | NaN     | 0.125727 |
+| 2      | 0.165716 | 0.165716 | 0.0                | 1     | NaN     | 0.161802 |
+| 3      | 0.193858 | 0.193858 | 0.0                | 1     | NaN     | 0.184432 |
+| 4      | 0.185664 | 0.185664 | 0.0                | 1     | NaN     | 0.201405 |
 
-<p>100 rows × 6 columns</p>
 </div>
 
-## Determine the ranking of the administrative polygons
+<div>
 
-Then ranking is based on the importance to sample more in the polygon. A
-multi criteria decision aiding methodology is used the rank the parcels
-from important to sample more (low rank) less important.
+> **Tip**
+>
+> The **Moran’s I index** is a statistical method used to determine if
+> there is a **spatial correlation/trend** within each area of interest.
+> For example, a **random field** would have a **Moran’s I index close
+> to 0**, while a clear **gradient of low to high values**, such as from
+> south to north, would be characterized by a **Moran’s I index close to
+> 1**.
 
-**Criteria** The state of the polygons will be used as criteria to
-determine the rank
+</div>
+
+#### Finding optimal number of samples to be collected
+
+1.  We first decide if each variable of the State are to maximize
+    (**benefit**) or minimize (**cost**):
+
+``` python
+benefit_criteria = [True, True, True, False, False, True]
+```
+
+2.  Then assign an **importance weight** to each of the variable of the
+    `State` (`Min`, `Max`, …):
+
+``` python
+optimizer = Optimizer(state=state())
+df_rank = optimizer.get_rank(is_benefit_x=benefit_criteria, 
+                             w_vector = [0.2, 0.1, 0.1, 0.2, 0.2, 0.2],  
+                             n_method="LINEAR1", c_method=None, w_method=None, s_method="CP")
+```
+
+``` python
+gdf_grid.join(df_rank, how='left').plot(column='rank',
+                                        cmap='viridis_r', 
+                                        legend_kwds={'label': 'Rank'}, 
+                                        legend=True)
+plt.axis('off')
+plt.title('Sampling Priorirty Rank');
+```
+
+![](index_files/figure-commonmark/cell-18-output-1.png)
+
+``` python
+df_rank.head()
+```
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|        | rank |
+|--------|------|
+| loc_id |      |
+| 28     | 1    |
+| 43     | 2    |
+| 27     | 3    |
+| 38     | 4    |
+| 73     | 5    |
+
+</div>
+
+Based on this rank we can again: 1. based on the **ranks (sampling
+priority)** and given sampling **budget**, calculate the number of
+samples to be collected for each administrative unit and carry out
+**random sampling**; 2. **perform** the random **sampling**; 3. and
+**carry out** the **measurements**.
+
+#### Informed random sampling
+
+``` python
+budget_t1 = 400
+n = rank_to_sample(df_rank['rank'].sort_index().values, 
+                   budget=budget_t1, min=1, policy="quantiles"); n
+```
+
+    array([1, 1, 1, 1, 1, 1, 1, 4, 4, 1, 1, 1, 1, 1, 1, 1, 1, 1, 3, 4, 1, 1,
+           1, 3, 4, 3, 4, 8, 8, 8, 1, 1, 1, 1, 8, 8, 8, 4, 8, 3, 1, 3, 3, 8,
+           4, 3, 4, 4, 4, 3, 1, 3, 8, 3, 8, 3, 3, 4, 4, 8, 3, 3, 3, 3, 8, 4,
+           8, 3, 4, 4, 8, 8, 4, 8, 8, 3, 8, 4, 8, 4, 8, 8, 8, 8, 4, 4, 3, 3,
+           3, 3, 4, 8, 8, 4, 4, 4, 3, 4, 3, 3])
+
+``` python
+sampler = Sampler(gdf_grid)
+sample_locs_t1 = sampler.sample(n, method='uniform')
+
+ax = sample_locs_t1.plot(markersize=2, color=red)
+gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax)
+plt.axis('off')
+plt.title('Ranked Random Samples Location');
+```
+
+![](index_files/figure-commonmark/cell-21-output-1.png)
+
+#### Second measurement campaign
+
+``` python
+dc_emulator = DataCollector(fname_raster)
+measurements_t1 = dc_emulator.collect(sample_locs_t1)
+
+ax = measurements_t1.plot(column='value', s=2, legend=True)
+gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax);
+plt.axis('off')
+plt.title('Measurements at Random Sampling Points');
+```
+
+![](index_files/figure-commonmark/cell-22-output-1.png)
+
+``` python
+measurements_sofar = pd.concat([measurements_t0, measurements_t1])
+
+ax = measurements_sofar.plot(column='value', s=2, legend=True)
+gdf_grid.boundary.plot(color=black, lw=0.5, ax=ax);
+plt.axis('off')
+plt.title('Measurements after \n 2 informed measurement campaigns');
+```
+
+![](index_files/figure-commonmark/cell-23-output-1.png)
+
+## Delving deeper into the optimization process
+
+### Determine the ranking of the administrative polygons
+
+The **ranking** is based on the importance of increasing sampling in
+each polygon. A multi-criteria decision-making methodology is used to
+rank the polygons from most important to least important, with **lower
+ranks indicating a higher priority for sampling**.
+
+#### Criteria
+
+The state of the polygons will be used as criteria to determine the
+rank:
 
 | Criteria             | State variable | Criteria Type |     |
 |----------------------|----------------|---------------|-----|
@@ -418,32 +597,44 @@ determine the rank
 | Standard deviation   | StdCB()        | Benefit       |     |
 | Moran I index        | MoranICB(k=5)  | Cost          |     |
 
-**Criteria type** Criteria can be of the type benefit or cost - Benefit
-(**high values** equal **high importance** to sample more) - Cost (**low
-value** equal **high importance** to sample more)
+#### Criteria type
 
-**Weights** A weight vector is used to determine the importance of
-criteria in comparison with each other.
+Criteria can be of the type benefit or cost:
 
-**MCDM techniques** - Compromise programmin (CP) - Distance based
-measure, where the distance to the optmal point is used, where low
-values relate to good alternatives. - TOPSIS (TOPSIS) - Distance based
-measure, where the closeness to the optimal point and anti optimal point
-is measured (high values –\> good alternative).
+- Benefit: **high values** equal **high importance** to sample more;
+- Cost: **low value** equal **high importance** to sample more).
 
-**Rank** Based on the MCDM value a ranking of the polygons is created
+#### Weights
+
+A **weight vector** is used to determine the **importance of criteria**
+in comparison with each other.
+
+#### MCDM techniques
+
+- **CP** (Compromise programming):
+  - Distance based measure, where the distance to the optmal point is
+    used, where low values relate to good alternatives.
+- **TOPSIS** (Technique for Order Preference by Similarity to Ideal
+  Solution):
+  - Distance-based measure, where the closeness to the optimal and
+    anti-optimal points is assessed (with higher values indicating
+    better alternatives).
+
+#### Rank
+
+Based on the MCDM value a ranking of the polygons is created:
 
 <div>
 
 > **Tip**
 >
-> Start with using equal weights for all the criteria, later you explore
-> the impact of changing the weight vector. Make sure the sum of the
-> weight vector is 1.
+> Start with using equal weights for all the criteria, later you will
+> explore the impact of changing the weight vector. Make sure the sum of
+> the weight vector is 1.
 
 </div>
 
-Ranking of administrative units based on three criteria
+Ranking of administrative units based on three criteria:
 
 ``` python
 benefit_criteria = [True, True, True]
@@ -452,7 +643,7 @@ weight_vector = [0.3, 0.3, 0.4]
 
 optimizer = Optimizer(state=state())
 df = optimizer.get_rank(is_benefit_x=benefit_criteria, w_vector = weight_vector,  
-                    n_method="LINEAR1", c_method = None, w_method=None, s_method="TOPSIS")
+                    n_method="LINEAR1", c_method = None, w_method=None, s_method="CP")
 
 df.head()
 ```
@@ -473,24 +664,58 @@ df.head()
 |        | rank |
 |--------|------|
 | loc_id |      |
-| 71     | 1    |
-| 51     | 2    |
-| 38     | 3    |
-| 74     | 4    |
-| 83     | 5    |
+| 0      | 1    |
+| 72     | 2    |
+| 71     | 3    |
+| 70     | 4    |
+| 69     | 5    |
 
 </div>
 
-Based on the ranking of the administrative units an optimized sampling
+Based on the ranking of the administrative units, an optimized sampling
 strategy for $t_1$ can be determined.
 
 ``` python
-combined_df = gdf_grid.join(df_rank, how='left')
+```
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+&#10;    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+&#10;    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+
+|        | geometry                                          |
+|--------|---------------------------------------------------|
+| loc_id |                                                   |
+| 0      | POINT (-1.21761 43.26428)                         |
+| 1      | POINT (-1.22039 43.27002)                         |
+| 2      | POINT (-1.21425 43.28088)                         |
+| 3      | POINT (-1.21639 43.29490)                         |
+| 4      | POINT (-1.22043 43.29747)                         |
+| ...    | ...                                               |
+| 95     | MULTIPOINT (-1.08287 43.31157, -1.08066 43.309... |
+| 96     | MULTIPOINT (-1.08603 43.31805, -1.08492 43.321... |
+| 97     | MULTIPOINT (-1.08597 43.32930, -1.08360 43.332... |
+| 98     | MULTIPOINT (-1.08374 43.33984, -1.07565 43.335... |
+| 99     | MULTIPOINT (-1.08477 43.34715, -1.07829 43.346... |
+
+<p>100 rows × 1 columns</p>
+</div>
+
+``` python
+combined_df = pd.merge(df, gdf_grid[['geometry']], left_index=True, right_index=True, how='inner')
 combined_gdf = gpd.GeoDataFrame(combined_df)
 
 fig, ax = plt.subplots(1, 1, figsize=(10, 8))
 cax = combined_gdf.plot(column='rank', cmap='Reds_r', legend=True, ax=ax)
-samples_t0.plot(column='value', ax=ax, cmap='viridis', s=1.5, legend=True)
+measurements_sofar.plot(column='value', ax=ax, cmap='viridis', s=1.5, legend=True)
 
 cbar = cax.get_figure().get_axes()[1]
 cbar.invert_yaxis()
@@ -504,18 +729,21 @@ ax.legend(handles=[rank_legend, value_legend], loc='upper left', bbox_to_anchor=
 plt.show()
 ```
 
-![](index_files/figure-commonmark/cell-15-output-1.png)
+![](index_files/figure-commonmark/cell-26-output-1.png)
 
-## Multi-year Adaptive sampling approach
+### Multi-year Adaptive sampling approach
 
-- Sampling in year O will done based on the prior
-- Sampling in year t will be done based on 6 state variables
+- Sampling in year 0 will done based on the prior;
+- Sampling in year t will be done based on 6 state variables:
   - \[Max value, Min value, Standard deviation, sample count, Moran I,
     Prior value\]
   - \[0.2, 0.1, 0.1, 0.2, 0.2, 0.2\]
 - Sampling policy will be based on the point budget and the quantile in
-  which the unit ranks 1st: 50 % of point budget 2nd: 30% of point
-  budget 3th: 20% of point budget 4th: no extra sample points
+  which the unit ranks:
+  - 1st: 50 % of point budget
+  - 2nd: 30% of point budget
+  - 3th: 20% of point budget
+  - 4th: no extra sample points
 
 ``` python
 number_of_years = 4
@@ -581,4 +809,4 @@ plt.tight_layout()
 plt.show()
 ```
 
-![](index_files/figure-commonmark/cell-17-output-1.png)
+![](index_files/figure-commonmark/cell-28-output-1.png)
