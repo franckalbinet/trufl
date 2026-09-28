@@ -1,4 +1,4 @@
-"""State's callbacks and variables
+"""Describe each area by state variables, such as the maximum, the number of measurements or Moran's I, computed by callbacks from the measurements collected so far.
 
 Docs: https://franckalbinet.github.io/trufl/callbacks.html.md"""
 
@@ -32,31 +32,32 @@ from typing import Type
 # %% ../nbs/04_callbacks.ipynb #2c86c507
 @dataclass
 class Variable:
-    "State variable"
-    name: str
-    value: float
+    "A named value that describes one area."
+    name: str # Column name in the state table
+    value: float # Value for the area, or `NaN` if it cannot be computed
 
 # %% ../nbs/04_callbacks.ipynb #a8ed920c
-class Callback(): pass
+class Callback:
+    "Base class for state callbacks. `__call__(loc_id, o)` returns a `Variable`, or a tuple of them, for area `loc_id` of `State` `o`."
 
 # %% ../nbs/04_callbacks.ipynb #bbe74c76
 class State:
-    def __init__(self, 
-                 measurements:gpd.GeoDataFrame, # Measurements data with `loc_id`, `geometry` and `value` columns. 
-                 smp_areas:gpd.GeoDataFrame, # Grid of areas/polygons of interest with `loc_id` and `geometry`.
-                 cbs:List[Callable], # List of Callback functions returning `Variable`s.
-                ): 
-        "Collect various variables/metrics per grid cell/administrative unit."
+    "State variables of each area, computed by callbacks from the measurements collected so far."
+    def __init__(self,
+        measurements:gpd.GeoDataFrame, # Measurements so far: a `value` column and `Point` geometries, indexed by `loc_id`
+        smp_areas:gpd.GeoDataFrame, # Areas to describe, indexed by `loc_id`, such as the output of `gridder`
+        cbs:List[Callable], # Callbacks that compute the state variables
+    ):
         fc.store_attr()
         self.unsampled_locs = self.smp_areas.index.difference(self.measurements.index)
 
 # %% ../nbs/04_callbacks.ipynb #efaeeaa2
 @patch
-def get(self:State, 
-        loc_id:str, # Unique id of the Point feature
-        as_numpy=False # Whether or not to return a list of `Variable` or a tuple of numpy arrays.
-       ):
-    "Get the state variables as defined by `cbs` for a given location (`loc_id`)."
+def get(self:State,
+    loc_id:str, # Area to describe
+    as_numpy=False, # Return `(names, values)` arrays instead of a list of `Variable`s?
+):
+    "State variables of area `loc_id`."
     variables = self.run_cbs(loc_id)
     if as_numpy:
         return (np.array([v.name for v in variables]), 
@@ -66,19 +67,22 @@ def get(self:State,
 
 # %% ../nbs/04_callbacks.ipynb #923b7a85
 @patch
-def __call__(self:State, loc_id=None, **kwargs):
-    "Get the state variables as defined by `cbs` for all `loc_id`s as a dataframe."
+def __call__(self:State,
+    loc_id=None, # Ignored: every area is computed
+    **kwargs # Ignored
+) -> pd.DataFrame: # One row per `loc_id` and one column per variable
+    "State variables of every area in `smp_areas`."
     loc_ids = self.smp_areas.index
     results = [{v.name: v.value for v in self.run_cbs(loc_id)} | {'loc_id': loc_id} for loc_id in loc_ids]
     return pd.DataFrame(results).set_index('loc_id')
 
 # %% ../nbs/04_callbacks.ipynb #02c6fbe2
 @patch
-def expand_to_k_nearest(self:State, 
-                        subset_measurements:gpd.GeoDataFrame, # Measurements for which Variables are computed.
-                        k:int=5, # Number of nearest neighbours (possibly belonging to adjacent cells/admin. units to consider).
-                       ):
-    "Expand measurements of concern possibly to nearest neighbors of surrounding grid cells."
+def expand_to_k_nearest(self:State,
+    subset_measurements:gpd.GeoDataFrame, # Measurements to expand, usually those of one area
+    k:int=5, # Number of nearest measurements to take for each point, counting the point itself
+) -> gpd.GeoDataFrame: # `k` rows for each point of `subset_measurements`, duplicates included, with a default index
+    "The `k` measurements nearest to each point of `subset_measurements`, from any area."
     tree = KDTree(self.measurements.geometry.apply(lambda p: (p.x, p.y)).tolist());
     _, indices = tree.query(subset_measurements.geometry.apply(lambda p: (p.x, p.y)).tolist(), k=k)
     return self.measurements.iloc[indices.flatten()].reset_index(drop=True)
@@ -92,8 +96,10 @@ def _flatten(self:State, variables):
 
 # %% ../nbs/04_callbacks.ipynb #40e3eb03
 @patch
-def run_cbs(self:State, loc_id):
-    "Run Callbacks sequentially and flatten the results if required."
+def run_cbs(self:State,
+    loc_id, # Area to describe
+):
+    "Run every callback on area `loc_id` and return their `Variable`s as one flat list."
     variables = []
     for cb in self.cbs:
         variables.append(cb(loc_id, self))
@@ -101,66 +107,79 @@ def run_cbs(self:State, loc_id):
 
 # %% ../nbs/04_callbacks.ipynb #cfe2ee14
 class MaxCB(Callback):
-    "Compute Maximum value of measurements at given location."
-    def __init__(self, name='Max'): fc.store_attr()
-    def __call__(self, 
-                 loc_id:int, # Unique id of an individual area of interest. 
-                 o:Type[State] # A State's object
-                ): 
+    "Highest measured value in the area. `NaN` if the area has no measurements."
+    def __init__(self,
+        name='Max', # Name of the variable
+    ): fc.store_attr()
+    def __call__(self,
+        loc_id:int, # Area to describe
+        o:Type[State], # `State` holding the measurements
+    ):
         if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
         return Variable(self.name, 
                         np.max(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb #f0e7b460
 class MinCB(Callback):
-    "Compute Minimum value of measurements at given location."
-    def __init__(self, name='Min'): fc.store_attr()
-    def __call__(self, 
-                 loc_id:int, # Unique id of an individual area of interest. 
-                 o:Type[State] # A State's object
-                ): 
+    "Lowest measured value in the area. `NaN` if the area has no measurements."
+    def __init__(self,
+        name='Min', # Name of the variable
+    ): fc.store_attr()
+    def __call__(self,
+        loc_id:int, # Area to describe
+        o:Type[State], # `State` holding the measurements
+    ):
         if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
         return Variable(self.name, 
                     np.min(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb #5bf5acc8
 class StdCB(Callback):
-    "Compute Standard deviation of measurements at given location."
-    def __init__(self, name='Standard Deviation'): fc.store_attr()
-    def __call__(self, 
-                 loc_id:int, # Unique id of an individual area of interest. 
-                 o:Type[State] # A State's object
-                ): 
+    "Standard deviation of the measured values in the area. `NaN` if the area has no measurements."
+    def __init__(self,
+        name='Standard Deviation', # Name of the variable
+    ): fc.store_attr()
+    def __call__(self,
+        loc_id:int, # Area to describe
+        o:Type[State], # `State` holding the measurements
+    ):
         if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
         return Variable(self.name, 
                     np.std(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb #ffc122b1
 class CountCB(Callback):
-    "Compute the number of measurements at given location."
-    def __init__(self, name='Count'): fc.store_attr()
-    def __call__(self, 
-                 loc_id:int, # Unique id of an individual area of interest. 
-                 o:Type[State] # A State's object
-                ): 
+    "Number of measurements in the area. `NaN` if the area has no measurements."
+    def __init__(self,
+        name='Count', # Name of the variable
+    ): fc.store_attr()
+    def __call__(self,
+        loc_id:int, # Area to describe
+        o:Type[State], # `State` holding the measurements
+    ):
         if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
         return Variable(self.name, 
                         len(o.measurements.loc[[loc_id]].value.values))
 
 # %% ../nbs/04_callbacks.ipynb #d524ee41
 class MoranICB(Callback):
-    "Compute Moran.I of measurements at given location. Return NaN if p_sim above threshold."
-    def __init__(self, k=5, p_threshold=0.05, name='Moran.I', min_n=5): fc.store_attr()
+    "Moran's I of the area's measurements and their nearest neighbours. `NaN` if the area has too few measurements or Moran's I is not significant."
+    def __init__(self,
+        k=5, # Number of neighbours per point, used to expand the measurements and to build the spatial weights
+        p_threshold=0.05, # Significance level: Moran's I is `NaN` when its pseudo p-value `p_sim` is at or above it
+        name='Moran.I', # Name of the variable
+        min_n=5, # Areas with `min_n` measurements or fewer get `NaN`
+    ): fc.store_attr()
 
     def _weights(self, measurements):
         w = weights.KNN.from_dataframe(measurements, k=self.k)
         w.transform = "R" # Row-standardization
         return w
         
-    def __call__(self, 
-                 loc_id:int, # Unique id of an individual area of interest. 
-                 o:Type[State] # A State's object
-                ): 
+    def __call__(self,
+        loc_id:int, # Area to describe
+        o:Type[State], # `State` holding the measurements
+    ):
         if loc_id in o.unsampled_locs: return Variable(self.name, np.nan)
         subset = o.measurements.loc[[loc_id]]
         if len(subset) <= self.min_n: return Variable(self.name, np.nan)
@@ -170,17 +189,17 @@ class MoranICB(Callback):
 
 # %% ../nbs/04_callbacks.ipynb #b162e251
 class PriorCB(Callback):
-    "Emulate a prior by taking the mean of measurement over a single grid cell."
-    def __init__(self, 
-                 fname_raster:str, # Name of raster file
-                 name:str='Prior' # Name of the State variable
-                ): 
+    "Mean of `fname_raster` over the area, emulating prior knowledge such as an airborne survey. Computed for every area, measured or not."
+    def __init__(self,
+        fname_raster:str, # Raster used as the prior
+        name:str='Prior', # Name of the variable
+    ):
         fc.store_attr()
 
-    def __call__(self, 
-                 loc_id:int, # Unique id of an individual area of interest. 
-                 o:Type[State] # A State's object
-                ): 
+    def __call__(self,
+        loc_id:int, # Area to describe
+        o:Type[State], # `State` holding the measurements
+    ):
         polygon = o.smp_areas.loc[o.smp_areas.reset_index().loc_id == loc_id].geometry
         with rasterio.open(self.fname_raster) as src:
             out_image, out_transform = mask(src, polygon, crop=True)
