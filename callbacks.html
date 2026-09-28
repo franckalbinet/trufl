@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.10.18">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="description" content="Describe each area by state variables, such as the maximum, the number of measurements or Moran’s I, computed by callbacks from the measurements collected so far.">
+
+<title>Callbacks – trufl</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for syntax highlighting */
+html { -webkit-text-size-adjust: 100%; }
+pre > code.sourceCode { white-space: pre; position: relative; }
+pre > code.sourceCode > span { display: inline-block; line-height: 1.25; }
+pre > code.sourceCode > span:empty { height: 1.2em; }
+.sourceCode { overflow: visible; }
+code.sourceCode > span { color: inherit; text-decoration: inherit; }
+div.sourceCode { margin: 1em 0; }
+pre.sourceCode { margin: 0; }
+@media screen {
+div.sourceCode { overflow: auto; }
+}
+@media print {
+pre > code.sourceCode { white-space: pre-wrap; }
+pre > code.sourceCode > span { text-indent: -5em; padding-left: 5em; }
+}
+pre.numberSource code
+  { counter-reset: source-line 0; }
+pre.numberSource code > span
+  { position: relative; left: -4em; counter-increment: source-line; }
+pre.numberSource code > span > a:first-child::before
+  { content: counter(source-line);
+    position: relative; left: -1em; text-align: right; vertical-align: baseline;
+    border: none; display: inline-block;
+    -webkit-touch-callout: none; -webkit-user-select: none;
+    -khtml-user-select: none; -moz-user-select: none;
+    -ms-user-select: none; user-select: none;
+    padding: 0 4px; width: 4em;
+  }
+pre.numberSource { margin-left: 3em;  padding-left: 4px; }
+div.sourceCode
+  {   }
+@media screen {
+pre > code.sourceCode > span > a:first-child::before { text-decoration: underline; }
+}
+</style>
+
+
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js" integrity="sha384-ZvpUoO/+PpLXR1lu4jmpXWu80pZlYUAfxl5NsBMWOEPSjUn/6Z/hRTt8+pR6L4N2" crossorigin="anonymous"></script><script src="site_libs/quarto-nav/quarto-nav.js"></script>
+<script src="site_libs/quarto-nav/headroom.min.js"></script>
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-search/autocomplete.umd.js"></script>
+<script src="site_libs/quarto-search/fuse.min.js"></script>
+<script src="site_libs/quarto-search/quarto-search.js"></script>
+<meta name="quarto:offset" content="./">
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-64a204ab8560d761af7679ceaba22944.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-cbed26e0df856eae0d97ab8ae9893fbb.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script id="quarto-search-options" type="application/json">{
+  "location": "navbar",
+  "copy-button": false,
+  "collapse-after": 3,
+  "panel-placement": "end",
+  "type": "overlay",
+  "limit": 50,
+  "keyboard-shortcut": [
+    "f",
+    "/",
+    "s"
+  ],
+  "show-item-context": false,
+  "language": {
+    "search-no-results-text": "No results",
+    "search-matching-documents-text": "matching documents",
+    "search-copy-link-title": "Copy link to search",
+    "search-hide-matches-text": "Hide additional matches",
+    "search-more-match-text": "more match in this document",
+    "search-more-matches-text": "more matches in this document",
+    "search-clear-button-title": "Clear",
+    "search-text-placeholder": "",
+    "search-detached-cancel-button-title": "Cancel",
+    "search-submit-button-title": "Submit",
+    "search-label": "Search"
+  }
+}</script>
+<script src="https://cdn.jsdelivr.net/npm/requirejs@2.3.6/require.min.js" integrity="sha384-c9c+LnTbwQ3aujuU7ULEPVvgLs+Fn6fJUvIGTsuu1ZcCf11fiEubah0ttpca4ntM sha384-6V1/AdqZRWk1KAlWbKBlGhN7VG4iE/yAZcO6NZPMF8od0vukrvr0tg4qY6NSrItx" crossorigin="anonymous"></script>
+
+<script type="application/javascript">define('jquery', [],function() {return window.jQuery;})</script>
+
+
+<link rel="stylesheet" href="styles.css">
+<meta property="og:title" content="Callbacks – trufl">
+<meta property="og:description" content="Describe each area by state variables, such as the maximum, the number of measurements or Moran’s I, computed by callbacks from the measurements collected so far.">
+<meta property="og:image" content="https://franckalbinet.github.io/trufl/04_callbacks_files/figure-html/cell-16-output-1.png">
+<meta property="og:site_name" content="trufl">
+<meta property="og:image:height" content="796">
+<meta property="og:image:width" content="984">
+<meta name="twitter:title" content="Callbacks – trufl">
+<meta name="twitter:description" content="Describe each area by state variables, such as the maximum, the number of measurements or Moran’s I, computed by callbacks from the measurements collected so far.">
+<meta name="twitter:image" content="https://franckalbinet.github.io/trufl/04_callbacks_files/figure-html/cell-16-output-1.png">
+<meta name="twitter:image-height" content="796">
+<meta name="twitter:image-width" content="984">
+<meta name="twitter:card" content="summary_large_image">
+</head>
+
+<body class="nav-sidebar floating nav-fixed quarto-light">
+
+<div id="quarto-search-results"></div>
+  <header id="quarto-header" class="headroom fixed-top">
+    <nav class="navbar navbar-expand-lg " data-bs-theme="dark">
+      <div class="navbar-container container-fluid">
+      <div class="navbar-brand-container mx-auto">
+    <a class="navbar-brand" href="./index.html">
+    <span class="navbar-title">trufl</span>
+    </a>
+  </div>
+        <div class="quarto-navbar-tools tools-end">
+</div>
+          <div id="quarto-search" class="" title="Search"></div>
+      </div> <!-- /container-fluid -->
+    </nav>
+  <nav class="quarto-secondary-nav">
+    <div class="container-fluid d-flex">
+      <button type="button" class="quarto-btn-toggle btn" data-bs-toggle="collapse" role="button" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">
+        <i class="bi bi-layout-text-sidebar-reverse"></i>
+      </button>
+        <nav class="quarto-page-breadcrumbs" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reader.html">API reference</a></li><li class="breadcrumb-item"><a href="./callbacks.html">Callbacks</a></li></ol></nav>
+        <a class="flex-grow-1" role="navigation" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item" aria-controls="quarto-sidebar" aria-expanded="false" aria-label="Toggle sidebar navigation" onclick="if (window.quartoToggleHeadroom) { window.quartoToggleHeadroom(); }">      
+        </a>
+    </div>
+  </nav>
+</header>
+<!-- content -->
+<div id="quarto-content" class="quarto-container page-columns page-rows-contents page-layout-article page-navbar">
+<!-- sidebar -->
+  <nav id="quarto-sidebar" class="sidebar collapse collapse-horizontal quarto-sidebar-collapse-item sidebar-navigation floating overflow-auto">
+    <div class="sidebar-menu-container"> 
+    <ul class="list-unstyled mt-1">
+        <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./index.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Overview</span></a>
+  </div>
+</li>
+        <li class="sidebar-item sidebar-item-section">
+      <div class="sidebar-item-container"> 
+            <a class="sidebar-item-text sidebar-link text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true">
+ <span class="menu-text">API reference</span></a>
+          <a class="sidebar-item-toggle text-start" data-bs-toggle="collapse" data-bs-target="#quarto-sidebar-section-1" role="navigation" aria-expanded="true" aria-label="Toggle section">
+            <i class="bi bi-chevron-right ms-2"></i>
+          </a> 
+      </div>
+      <ul id="quarto-sidebar-section-1" class="collapse list-unstyled sidebar-section depth1 show">  
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./reader.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Reader</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./sampler.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Sampler</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./optimizer.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Optimizer</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./utils.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Utilities</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./callbacks.html" class="sidebar-item-text sidebar-link active">
+ <span class="menu-text">Callbacks</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./mcdm.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">MCDM</span></a>
+  </div>
+</li>
+          <li class="sidebar-item">
+  <div class="sidebar-item-container"> 
+  <a href="./collector.html" class="sidebar-item-text sidebar-link">
+ <span class="menu-text">Data Collector</span></a>
+  </div>
+</li>
+      </ul>
+  </li>
+    </ul>
+    </div>
+</nav>
+<div id="quarto-sidebar-glass" class="quarto-sidebar-collapse-item" data-bs-toggle="collapse" data-bs-target=".quarto-sidebar-collapse-item"></div>
+<!-- margin-sidebar -->
+    <div id="quarto-margin-sidebar" class="sidebar margin-sidebar">
+        <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">On this page</h2>
+   
+  <ul>
+  <li><a href="#state" id="toc-state" class="nav-link active" data-scroll-target="#state">State</a></li>
+  <li><a href="#callbacks" id="toc-callbacks" class="nav-link" data-scroll-target="#callbacks">Callbacks</a></li>
+  <li><a href="#example" id="toc-example" class="nav-link" data-scroll-target="#example">Example</a>
+  <ul>
+  <li><a href="#expanding-measurements-for-morans-i" id="toc-expanding-measurements-for-morans-i" class="nav-link" data-scroll-target="#expanding-measurements-for-morans-i">Expanding measurements for Moran’s I</a></li>
+  </ul></li>
+  </ul>
+<div class="toc-actions"><ul><li><a href="https://github.com/franckalbinet/trufl/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></nav>
+    </div>
+<!-- main -->
+<main class="content" id="quarto-document-content">
+
+<header id="title-block-header" class="quarto-title-block default"><nav class="quarto-page-breadcrumbs quarto-title-breadcrumbs d-none d-lg-block" aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="./reader.html">API reference</a></li><li class="breadcrumb-item"><a href="./callbacks.html">Callbacks</a></li></ol></nav>
+<div class="quarto-title">
+<h1 class="title">Callbacks</h1>
+</div>
+
+<div>
+  <div class="description">
+    Describe each area by state variables, such as the maximum, the number of measurements or Moran’s I, computed by callbacks from the measurements collected so far.
+  </div>
+</div>
+
+
+<div class="quarto-title-meta">
+
+    
+  
+    
+  </div>
+  
+
+
+</header>
+
+
+<!-- WARNING: THIS FILE WAS AUTOGENERATED! DO NOT EDIT! -->
+<p>A <a href="https://franckalbinet.github.io/trufl/callbacks.html#state"><code>State</code></a> describes every area by a set of variables computed from the measurements collected so far. Each callback computes one variable, such as the highest value (<a href="https://franckalbinet.github.io/trufl/callbacks.html#maxcb"><code>MaxCB</code></a>) or the number of measurements (<a href="https://franckalbinet.github.io/trufl/callbacks.html#countcb"><code>CountCB</code></a>). Calling a <a href="https://franckalbinet.github.io/trufl/callbacks.html#state"><code>State</code></a> runs every callback on every area and returns one row per <code>loc_id</code>. <a href="https://franckalbinet.github.io/trufl/optimizer.html#optimizer"><code>Optimizer</code></a> ranks the areas from this table.</p>
+<div id="463d977d" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.683031+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.687786+00:00&quot;,&quot;total&quot;:0.004758003999995708}}" data-execution_count="4">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L34" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="variable" class="level3">
+<h3 class="anchored" data-anchor-id="variable">Variable</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb1"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb1-1"><a href="#cb1-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> Variable(</span>
+<span id="cb1-2"><a href="#cb1-2" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span>, value:<span class="bu">float</span></span>
+<span id="cb1-3"><a href="#cb1-3" aria-hidden="true" tabindex="-1"></a>)<span class="op">-&gt;</span><span class="va">None</span>:</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>A named value that describes one area.</em></p>
+</section>
+</div>
+<div id="c176a6ed" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.688537+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.690872+00:00&quot;,&quot;total&quot;:0.002363028000019085}}" data-execution_count="6">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L40" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="callback" class="level3">
+<h3 class="anchored" data-anchor-id="callback">Callback</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb2"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb2-1"><a href="#cb2-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> Callback(</span>
+<span id="cb2-2"><a href="#cb2-2" aria-hidden="true" tabindex="-1"></a>    <span class="op">*</span>args, <span class="op">**</span>kwargs</span>
+<span id="cb2-3"><a href="#cb2-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Base class for state callbacks. <code>__call__(loc_id, o)</code> returns a <a href="https://franckalbinet.github.io/trufl/callbacks.html#variable"><code>Variable</code></a>, or a tuple of them, for area <code>loc_id</code> of <a href="https://franckalbinet.github.io/trufl/callbacks.html#state"><code>State</code></a> <code>o</code>.</em></p>
+</section>
+</div>
+<section id="state" class="level2">
+<h2 class="anchored" data-anchor-id="state">State</h2>
+<div id="d3ddc608" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.691964+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.694495+00:00&quot;,&quot;total&quot;:0.0025356769999973494}}" data-execution_count="8">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L44" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="state-1" class="level3">
+<h3 class="anchored" data-anchor-id="state-1">State</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb3"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> State(</span>
+<span id="cb3-2"><a href="#cb3-2" aria-hidden="true" tabindex="-1"></a>    measurements:geopandas.geodataframe.GeoDataFrame, <span class="co"># Measurements so far: a `value` column and `Point` geometries, indexed by `loc_id`</span></span>
+<span id="cb3-3"><a href="#cb3-3" aria-hidden="true" tabindex="-1"></a>    smp_areas:geopandas.geodataframe.GeoDataFrame, <span class="co"># Areas to describe, indexed by `loc_id`, such as the output of `gridder`</span></span>
+<span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>    cbs:List[collections.abc.Callable], <span class="co"># Callbacks that compute the state variables</span></span>
+<span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>State variables of each area, computed by callbacks from the measurements collected so far.</em></p>
+</section>
+</div>
+<div id="b64fcf6a" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.695652+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.698164+00:00&quot;,&quot;total&quot;:0.0025154469999790763}}" data-execution_count="10">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L56" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="state.get" class="level3">
+<h3 class="anchored" data-anchor-id="state.get">State.get</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb4"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb4-1"><a href="#cb4-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> get(</span>
+<span id="cb4-2"><a href="#cb4-2" aria-hidden="true" tabindex="-1"></a>    loc_id:<span class="bu">str</span>, <span class="co"># Area to describe</span></span>
+<span id="cb4-3"><a href="#cb4-3" aria-hidden="true" tabindex="-1"></a>    as_numpy:<span class="bu">bool</span><span class="op">=</span><span class="va">False</span>, <span class="co"># Return `(names, values)` arrays instead of a list of `Variable`s?</span></span>
+<span id="cb4-4"><a href="#cb4-4" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>State variables of area <code>loc_id</code>.</em></p>
+</section>
+</div>
+<div id="613a3009" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.699304+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.701813+00:00&quot;,&quot;total&quot;:0.002512832999997272}}" data-execution_count="12">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L70" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="state.__call__" class="level3">
+<h3 class="anchored" data-anchor-id="state.__call__">State.__call__</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb5"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb5-1"><a href="#cb5-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> <span class="fu">__call__</span>(</span>
+<span id="cb5-2"><a href="#cb5-2" aria-hidden="true" tabindex="-1"></a>    loc_id:NoneType<span class="op">=</span><span class="va">None</span>, <span class="co"># Ignored: every area is computed</span></span>
+<span id="cb5-3"><a href="#cb5-3" aria-hidden="true" tabindex="-1"></a>    <span class="op">**</span>kwargs</span>
+<span id="cb5-4"><a href="#cb5-4" aria-hidden="true" tabindex="-1"></a>)<span class="op">-&gt;</span>pandas.DataFrame: <span class="co"># One row per `loc_id` and one column per variable</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>State variables of every area in <code>smp_areas</code>.</em></p>
+</section>
+</div>
+<div id="93dffd92" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.703123+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.705789+00:00&quot;,&quot;total&quot;:0.002669779999990851}}" data-execution_count="14">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L81" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="state.expand_to_k_nearest" class="level3">
+<h3 class="anchored" data-anchor-id="state.expand_to_k_nearest">State.expand_to_k_nearest</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb6"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> expand_to_k_nearest(</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a>    subset_measurements:geopandas.geodataframe.GeoDataFrame, <span class="co"># Measurements to expand, usually those of one area</span></span>
+<span id="cb6-3"><a href="#cb6-3" aria-hidden="true" tabindex="-1"></a>    k:<span class="bu">int</span><span class="op">=</span><span class="dv">5</span>, <span class="co"># Number of nearest measurements to take for each point, counting the point itself</span></span>
+<span id="cb6-4"><a href="#cb6-4" aria-hidden="true" tabindex="-1"></a>)<span class="op">-&gt;</span>geopandas.geodataframe.GeoDataFrame: <span class="co"># `k` rows for each point of `subset_measurements`, duplicates included, with a default index</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>The <code>k</code> measurements nearest to each point of <code>subset_measurements</code>, from any area.</em></p>
+</section>
+</div>
+<div id="00c4fa3a" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.707608+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.709941+00:00&quot;,&quot;total&quot;:0.002337689999990289}}" data-execution_count="17">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L99" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="state.run_cbs" class="level3">
+<h3 class="anchored" data-anchor-id="state.run_cbs">State.run_cbs</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb7"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> run_cbs(</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>    loc_id, <span class="co"># Area to describe</span></span>
+<span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Run every callback on area <code>loc_id</code> and return their <a href="https://franckalbinet.github.io/trufl/callbacks.html#variable"><code>Variable</code></a>s as one flat list.</em></p>
+</section>
+</div>
+</section>
+<section id="callbacks" class="level2">
+<h2 class="anchored" data-anchor-id="callbacks">Callbacks</h2>
+<p>Each callback below computes one variable per area. <a href="https://franckalbinet.github.io/trufl/callbacks.html#maxcb"><code>MaxCB</code></a>, <a href="https://franckalbinet.github.io/trufl/callbacks.html#mincb"><code>MinCB</code></a>, <a href="https://franckalbinet.github.io/trufl/callbacks.html#stdcb"><code>StdCB</code></a>, <a href="https://franckalbinet.github.io/trufl/callbacks.html#countcb"><code>CountCB</code></a> and <a href="https://franckalbinet.github.io/trufl/callbacks.html#moranicb"><code>MoranICB</code></a> return <code>NaN</code> for an area without measurements. A missing count is therefore <code>NaN</code>, not 0. <a href="https://franckalbinet.github.io/trufl/optimizer.html#optimizer.get_rank"><code>Optimizer.get_rank</code></a> treats a missing value as the highest priority for its criterion.</p>
+<p>To add a variable, subclass <a href="https://franckalbinet.github.io/trufl/callbacks.html#callback"><code>Callback</code></a> and implement <code>__call__(loc_id, o)</code>. Return a tuple of <a href="https://franckalbinet.github.io/trufl/callbacks.html#variable"><code>Variable</code></a>s to add several columns at once.</p>
+<div id="a90aeda5" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.711511+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.713720+00:00&quot;,&quot;total&quot;:0.002213232000002563}}" data-execution_count="19">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L109" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="maxcb" class="level3">
+<h3 class="anchored" data-anchor-id="maxcb">MaxCB</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb8"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> MaxCB(</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span><span class="op">=</span><span class="st">'Max'</span>, <span class="co"># Name of the variable</span></span>
+<span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Highest measured value in the area. <code>NaN</code> if the area has no measurements.</em></p>
+</section>
+</div>
+<div id="28847bcf" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.714927+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.717129+00:00&quot;,&quot;total&quot;:0.002205599999996366}}" data-execution_count="21">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L123" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="mincb" class="level3">
+<h3 class="anchored" data-anchor-id="mincb">MinCB</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb9"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> MinCB(</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span><span class="op">=</span><span class="st">'Min'</span>, <span class="co"># Name of the variable</span></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Lowest measured value in the area. <code>NaN</code> if the area has no measurements.</em></p>
+</section>
+</div>
+<div id="83d7bbe2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.718311+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.720517+00:00&quot;,&quot;total&quot;:0.002209356000008711}}" data-execution_count="23">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L137" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="stdcb" class="level3">
+<h3 class="anchored" data-anchor-id="stdcb">StdCB</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb10"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> StdCB(</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span><span class="op">=</span><span class="st">'Standard Deviation'</span>, <span class="co"># Name of the variable</span></span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Standard deviation of the measured values in the area. <code>NaN</code> if the area has no measurements.</em></p>
+</section>
+</div>
+<div id="362e1682" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.721707+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.723935+00:00&quot;,&quot;total&quot;:0.002231899999998177}}" data-execution_count="25">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L151" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="countcb" class="level3">
+<h3 class="anchored" data-anchor-id="countcb">CountCB</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb11"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> CountCB(</span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span><span class="op">=</span><span class="st">'Count'</span>, <span class="co"># Name of the variable</span></span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Number of measurements in the area. <code>NaN</code> if the area has no measurements.</em></p>
+</section>
+</div>
+<div id="3fc3de52" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.725700+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.728127+00:00&quot;,&quot;total&quot;:0.0024304490000019996}}" data-execution_count="27">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L165" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="moranicb" class="level3">
+<h3 class="anchored" data-anchor-id="moranicb">MoranICB</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb12"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> MoranICB(</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>    k:<span class="bu">int</span><span class="op">=</span><span class="dv">5</span>, <span class="co"># Number of neighbours per point, used to expand the measurements and to build the spatial weights</span></span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>    p_threshold:<span class="bu">float</span><span class="op">=</span><span class="fl">0.05</span>, <span class="co"># Significance level: Moran's I is `NaN` when its pseudo p-value `p_sim` is at or above it</span></span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span><span class="op">=</span><span class="st">'Moran.I'</span>, <span class="co"># Name of the variable</span></span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>    min_n:<span class="bu">int</span><span class="op">=</span><span class="dv">5</span>, <span class="co"># Areas with `min_n` measurements or fewer get `NaN`</span></span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Moran’s I of the area’s measurements and their nearest neighbours. <code>NaN</code> if the area has too few measurements or Moran’s I is not significant.</em></p>
+</section>
+</div>
+<div id="406dcff2" class="cell" data-quarto-private-1="{&quot;key&quot;:&quot;execution&quot;,&quot;value&quot;:{&quot;iopub.execute_input&quot;:&quot;2026-09-28T18:54:00.729519+00:00&quot;,&quot;shell.execute_reply&quot;:&quot;2026-09-28T18:54:00.731804+00:00&quot;,&quot;total&quot;:0.0022881749999896783}}" data-execution_count="29">
+<hr>
+<p><a href="https://github.com/franckalbinet/trufl/blob/main/trufl/callbacks.py#L191" target="_blank" style="float:right; font-size:smaller">source</a></p>
+<section id="priorcb" class="level3">
+<h3 class="anchored" data-anchor-id="priorcb">PriorCB</h3>
+<div class="code-copy-outer-scaffold"><div class="sourceCode" id="cb13"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a><span class="kw">def</span> PriorCB(</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>    fname_raster:<span class="bu">str</span>, <span class="co"># Raster used as the prior</span></span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>    name:<span class="bu">str</span><span class="op">=</span><span class="st">'Prior'</span>, <span class="co"># Name of the variable</span></span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>):</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<p><em>Mean of <code>fname_raster</code> over the area, emulating prior knowledge such as an airborne survey. Computed for every area, measured or not.</em></p>
+</section>
+</div>
+</section>
+<section id="example" class="level2">
+<h2 class="anchored" data-anchor-id="example">Example</h2>
+<p>The example emulates one campaign on a 10 by 10 grid. Each area gets between 0 and 9 points:</p>
+<div id="45c5389c" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb14"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>fname_raster <span class="op">=</span> <span class="st">'files/ground-truth-01-4326-simulated.tif'</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>gdf_grid <span class="op">=</span> gridder(fname_raster, nrows<span class="op">=</span><span class="dv">10</span>, ncols<span class="op">=</span><span class="dv">10</span>)</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>n <span class="op">=</span> np.random.default_rng(<span class="dv">41</span>).integers(<span class="dv">0</span>, <span class="dv">10</span>, size<span class="op">=</span><span class="bu">len</span>(gdf_grid))</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>samples_t0 <span class="op">=</span> DataCollector(fname_raster).collect(Sampler(gdf_grid).sample(n, method<span class="op">=</span><span class="st">'uniform'</span>, rng<span class="op">=</span><span class="dv">41</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+</div>
+<div id="faee0147" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb15"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> samples_t0.plot(column<span class="op">=</span><span class="st">'value'</span>, s<span class="op">=</span><span class="dv">3</span>, legend<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a>gdf_grid.boundary.plot(color<span class="op">=</span>black, lw<span class="op">=</span><span class="fl">0.5</span>, ax<span class="op">=</span>ax)</span>
+<span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a>ax.axis(<span class="st">'off'</span>)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="04_callbacks_files/figure-html/cell-16-output-1.png" width="492" height="398" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+<p>Create a <a href="https://franckalbinet.github.io/trufl/callbacks.html#state"><code>State</code></a> with the callbacks to compute, then call it to get one row per area. <a href="https://franckalbinet.github.io/trufl/callbacks.html#moranicb"><code>MoranICB</code></a> tests significance with random permutations. Fixing NumPy’s global seed makes its results reproducible:</p>
+<div id="059582ef" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb16"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb16-1"><a href="#cb16-1" aria-hidden="true" tabindex="-1"></a>np.random.seed(<span class="dv">0</span>)</span>
+<span id="cb16-2"><a href="#cb16-2" aria-hidden="true" tabindex="-1"></a>state <span class="op">=</span> State(samples_t0, gdf_grid, cbs<span class="op">=</span>[</span>
+<span id="cb16-3"><a href="#cb16-3" aria-hidden="true" tabindex="-1"></a>    MaxCB(), MinCB(), StdCB(), CountCB(), MoranICB(k<span class="op">=</span><span class="dv">5</span>), PriorCB(fname_raster)</span>
+<span id="cb16-4"><a href="#cb16-4" aria-hidden="true" tabindex="-1"></a>])</span>
+<span id="cb16-5"><a href="#cb16-5" aria-hidden="true" tabindex="-1"></a>state_t0 <span class="op">=</span> state()</span>
+<span id="cb16-6"><a href="#cb16-6" aria-hidden="true" tabindex="-1"></a>test_eq(<span class="bu">len</span>(state_t0), <span class="bu">len</span>(gdf_grid))</span>
+<span id="cb16-7"><a href="#cb16-7" aria-hidden="true" tabindex="-1"></a>state_t0.head()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Max</th>
+<th data-quarto-table-cell-role="th">Min</th>
+<th data-quarto-table-cell-role="th">Standard Deviation</th>
+<th data-quarto-table-cell-role="th">Count</th>
+<th data-quarto-table-cell-role="th">Moran.I</th>
+<th data-quarto-table-cell-role="th">Prior</th>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">loc_id</th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">0</th>
+<td>0.142204</td>
+<td>0.043098</td>
+<td>0.038206</td>
+<td>6.0</td>
+<td>0.874200</td>
+<td>0.102492</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">1</th>
+<td>0.160292</td>
+<td>0.111590</td>
+<td>0.017177</td>
+<td>9.0</td>
+<td>0.623260</td>
+<td>0.125727</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">2</th>
+<td>0.177072</td>
+<td>0.156276</td>
+<td>0.007273</td>
+<td>8.0</td>
+<td>0.579608</td>
+<td>0.161802</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">3</th>
+<td>0.227234</td>
+<td>0.181968</td>
+<td>0.016882</td>
+<td>7.0</td>
+<td>0.788752</td>
+<td>0.184432</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">4</th>
+<td>0.257189</td>
+<td>0.177842</td>
+<td>0.023974</td>
+<td>7.0</td>
+<td>0.505154</td>
+<td>0.201405</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p>Areas without measurements have <code>NaN</code> for every variable except <code>Prior</code>:</p>
+<div id="cfb475d6" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>unsampled <span class="op">=</span> state_t0.loc[state.unsampled_locs]</span>
+<span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>test_eq(unsampled.drop(columns<span class="op">=</span><span class="st">'Prior'</span>).isna().<span class="bu">all</span>().<span class="bu">all</span>(), <span class="va">True</span>)</span>
+<span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>unsampled.head()</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+
+
+<table class="dataframe caption-top table table-sm table-striped small" data-border="1">
+<thead>
+<tr class="header">
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th">Max</th>
+<th data-quarto-table-cell-role="th">Min</th>
+<th data-quarto-table-cell-role="th">Standard Deviation</th>
+<th data-quarto-table-cell-role="th">Count</th>
+<th data-quarto-table-cell-role="th">Moran.I</th>
+<th data-quarto-table-cell-role="th">Prior</th>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">loc_id</th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+<th data-quarto-table-cell-role="th"></th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">16</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>0.455841</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">26</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>0.597431</td>
+</tr>
+<tr class="odd">
+<th data-quarto-table-cell-role="th">35</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>0.643783</td>
+</tr>
+<tr class="even">
+<th data-quarto-table-cell-role="th">69</th>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>NaN</td>
+<td>0.544591</td>
+</tr>
+</tbody>
+</table>
+
+</div>
+</div>
+</div>
+<p><code>get</code> computes the variables of one area:</p>
+<div id="a27c4418" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb18"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb18-1"><a href="#cb18-1" aria-hidden="true" tabindex="-1"></a>state.get(state_t0[<span class="st">'Count'</span>].idxmax())</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<pre><code>[Variable(name='Max', value=np.float32(0.16029228)),
+ Variable(name='Min', value=np.float32(0.11158965)),
+ Variable(name='Standard Deviation', value=np.float32(0.017177373)),
+ Variable(name='Count', value=9),
+ Variable(name='Moran.I', value=np.float64(0.6232596338489773)),
+ Variable(name='Prior', value=np.float32(0.12572713))]</code></pre>
+</div>
+</div>
+<section id="expanding-measurements-for-morans-i" class="level3">
+<h3 class="anchored" data-anchor-id="expanding-measurements-for-morans-i">Expanding measurements for Moran’s I</h3>
+<p>Moran’s I measures spatial autocorrelation. It is close to 1 when nearby measurements have similar values, and close to 0 when values are spatially random. One area rarely has enough measurements to estimate it alone. <a href="https://franckalbinet.github.io/trufl/callbacks.html#moranicb"><code>MoranICB</code></a> therefore adds the <code>k</code> nearest measurements of each point in the area, including those in neighbouring areas. <code>expand_to_k_nearest</code> does this expansion.</p>
+<p>The plot shows the expanded measurements of the area with the most measurements, and the areas they come from:</p>
+<div id="8e0a2299" class="cell">
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb20"><pre class="sourceCode python code-with-copy"><code class="sourceCode python"><span id="cb20-1"><a href="#cb20-1" aria-hidden="true" tabindex="-1"></a>loc_id <span class="op">=</span> state_t0[<span class="st">'Count'</span>].idxmax()</span>
+<span id="cb20-2"><a href="#cb20-2" aria-hidden="true" tabindex="-1"></a>subset <span class="op">=</span> state.measurements.loc[[loc_id]]</span>
+<span id="cb20-3"><a href="#cb20-3" aria-hidden="true" tabindex="-1"></a>expanded_pts <span class="op">=</span> state.expand_to_k_nearest(subset, k<span class="op">=</span><span class="dv">5</span>)</span>
+<span id="cb20-4"><a href="#cb20-4" aria-hidden="true" tabindex="-1"></a>test_eq(<span class="bu">len</span>(expanded_pts), <span class="dv">5</span> <span class="op">*</span> <span class="bu">len</span>(subset))</span>
+<span id="cb20-5"><a href="#cb20-5" aria-hidden="true" tabindex="-1"></a>ax <span class="op">=</span> expanded_pts.plot(column<span class="op">=</span><span class="st">'value'</span>, s<span class="op">=</span><span class="dv">10</span>, legend<span class="op">=</span><span class="va">True</span>)</span>
+<span id="cb20-6"><a href="#cb20-6" aria-hidden="true" tabindex="-1"></a>gpd.sjoin(gdf_grid, expanded_pts, how<span class="op">=</span><span class="st">"inner"</span>, predicate<span class="op">=</span><span class="st">'contains'</span>).boundary.plot(color<span class="op">=</span>black, lw<span class="op">=</span><span class="fl">0.5</span>, ax<span class="op">=</span>ax)</span>
+<span id="cb20-7"><a href="#cb20-7" aria-hidden="true" tabindex="-1"></a>ax.axis(<span class="st">'off'</span>)<span class="op">;</span></span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
+<div class="cell-output cell-output-display">
+<div>
+<figure class="figure">
+<p><img src="04_callbacks_files/figure-html/cell-20-output-1.png" width="404" height="389" class="figure-img"></p>
+</figure>
+</div>
+</div>
+</div>
+
+
+</section>
+</section>
+
+</main> <!-- /main -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+    const viewSource = window.document.getElementById('quarto-view-source') ||
+                       window.document.getElementById('quarto-code-tools-source');
+    if (viewSource) {
+      const sourceUrl = viewSource.getAttribute("data-quarto-source-url");
+      viewSource.addEventListener("click", function(e) {
+        if (sourceUrl) {
+          // rstudio viewer pane
+          if (/\bcapabilities=\b/.test(window.location)) {
+            window.open(sourceUrl);
+          } else {
+            window.location.href = sourceUrl;
+          }
+        } else {
+          const modal = new bootstrap.Modal(document.getElementById('quarto-embedded-source-code-modal'));
+          modal.show();
+        }
+        return false;
+      });
+    }
+    function toggleCodeHandler(show) {
+      return function(e) {
+        const cellDetails = window.document.querySelectorAll(".cell details.code-fold");
+        for (let i=0; i<cellDetails.length; i++) {
+          const details = cellDetails[i];
+          if (show) {
+            details.open = true;
+          } else {
+            details.removeAttribute("open");
+          }
+        }
+        const cellCodeDivs = window.document.querySelectorAll(".cell div.sourceCode.cell-code");
+        const fromCls = show ? "hidden" : "unhidden";
+        const toCls = show ? "unhidden" : "hidden";
+        for (let i=0; i<cellCodeDivs.length; i++) {
+          const codeDiv = cellCodeDivs[i];
+          if (codeDiv.classList.contains(fromCls)) {
+            codeDiv.classList.remove(fromCls);
+            codeDiv.classList.add(toCls);
+          } 
+        }
+        return false;
+      }
+    }
+    const hideAllCode = window.document.getElementById("quarto-hide-all-code");
+    if (hideAllCode) {
+      hideAllCode.addEventListener("click", toggleCodeHandler(false));
+    }
+    const showAllCode = window.document.getElementById("quarto-show-all-code");
+    if (showAllCode) {
+      showAllCode.addEventListener("click", toggleCodeHandler(true));
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp("https:\/\/franckalbinet\.github\.io\/trufl");
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+
+
+
+
+<footer class="footer"><div class="nav-footer"><div class="nav-footer-center"><div class="toc-actions d-sm-block d-md-none"><ul><li><a href="https://github.com/franckalbinet/trufl/issues/new" class="toc-action"><i class="bi bi-github"></i>Report an issue</a></li></ul></div></div></div></footer></body></html>
