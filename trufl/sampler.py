@@ -26,7 +26,7 @@ class Sampler:
     def loc_ids(self):
         arr = self.smp_areas.reset_index().loc_id.values
         if len(arr) != len(np.unique(arr)):
-            raise ValueError(f'{self.loc_id_col} column contains non-unique values.')
+            raise ValueError('`loc_id` column contains non-unique values.')
         else:
             return arr
         
