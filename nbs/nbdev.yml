@@ -7,3 +7,8 @@ website:
   description: "Optimize adaptive sampling"
   repo-branch: main
   repo-url: "https://github.com/franckalbinet/trufl"
+
+format-links:
+  - html
+  - format: commonmark
+    text: Markdown

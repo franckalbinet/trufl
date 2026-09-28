@@ -1,7 +1,8 @@
 website:
   sidebar:
     contents:
-      - index.ipynb
+      - text: Overview
+        href: index.ipynb
       - section: Source code
         contents:
           - 00_reader.ipynb
