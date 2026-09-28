@@ -368,7 +368,7 @@ def linear1(x_matrix:np.array, is_benefit_x:list):
     z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
     for j in range(x_matrix.shape[1]):
         if is_benefit_x[j]:
-            max_value = np.amax(x_matrix[:, j])
+            max_value = np.nanmax(x_matrix[:, j])
             if max_value == 0.0:
                 raise ValueError(
                     "The maximum value of a benefit criterion must not be "
@@ -377,7 +377,7 @@ def linear1(x_matrix:np.array, is_benefit_x:list):
                 )
             z_matrix[:, j] = x_matrix[:, j] / max_value
         else:
-            min_value = np.amin(x_matrix[:, j])
+            min_value = np.nanmin(x_matrix[:, j])
             if min_value == 0.0:
                 raise ValueError(
                     "The minimum value of a cost criterion must not be zero "
@@ -400,7 +400,7 @@ def linear2(x_matrix:np.array, is_benefit_x:list):
     # Construct the normalized matrix
     z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
     for j in range(x_matrix.shape[1]):
-        denominator = np.amax(x_matrix[:, j]) - np.amin(x_matrix[:, j])
+        denominator = np.nanmax(x_matrix[:, j]) - np.nanmin(x_matrix[:, j])
         if denominator == 0.0:
             raise ValueError(
                 "The maximum value of a criterion must not be equal to its "
@@ -409,11 +409,11 @@ def linear2(x_matrix:np.array, is_benefit_x:list):
             )
         if is_benefit_x[j]:
             z_matrix[:, j] = (
-                (x_matrix[:, j] - np.amin(x_matrix[:, j])) / denominator
+                (x_matrix[:, j] - np.nanmin(x_matrix[:, j])) / denominator
             )
         else:
             z_matrix[:, j] = (
-                (np.amax(x_matrix[:, j]) - x_matrix[:, j]) / denominator
+                (np.nanmax(x_matrix[:, j]) - x_matrix[:, j]) / denominator
             )
 
     # All criteria have been transformed into benefit criteria
@@ -432,7 +432,7 @@ def linear3(x_matrix:np.array, is_benefit_x:list):
     # Construct the normalized matrix
     z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
     for j in range(x_matrix.shape[1]):
-        denominator = np.sum(x_matrix[:, j])
+        denominator = np.nansum(x_matrix[:, j])
         if denominator == 0.0:
             raise ValueError(
                 "The sum of a criterion's values must not be equal to zero "
@@ -456,7 +456,7 @@ def vector(x_matrix:np.array, is_benefit_x:list):
     # Construct the normalized matrix
     z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
     for j in range(x_matrix.shape[1]):
-        denominator = np.sqrt(np.sum(x_matrix[:, j] ** 2))
+        denominator = np.sqrt(np.nansum(x_matrix[:, j] ** 2))
         if denominator == 0.0:
             raise ValueError(
                 "The square root of a criterion's sum of squared values must "
