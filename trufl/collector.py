@@ -1,4 +1,4 @@
-"""Fetching field measurements or emulating it.
+"""Emulate a field campaign by reading measurements from a raster at sample locations.
 
 Docs: https://franckalbinet.github.io/trufl/collector.html.md"""
 
@@ -15,25 +15,27 @@ from rasterio import transform
 
 # %% ../nbs/06_collector.ipynb #5b7d2ebb
 class DataCollector:
-    def __init__(self, 
-                 fname_raster:str, # The path to the raster file.
-                 band:int=1, # The band number to use. Defaults to 1.
-                ):
-        "Emulate data collection. Provided a set of location, return values sampled from given raster file."
+    "Emulate field measurements by reading a raster at sample locations."
+    def __init__(self,
+        fname_raster:str, # Path to the raster used as ground truth
+        band:int=1, # Band to read
+    ):
         fc.store_attr()
         with rasterio.open(fname_raster) as src:
             self.band_data = src.read(band)
             self.affine = src.transform
             self.bounds = src.bounds
     
-    def get_values(self, 
-                   gdf:gpd.GeoDataFrame # loc_id and Point/Multipoint geometry of samples where to measure.
-                  ):
+    def get_values(self,
+        gdf:gpd.GeoDataFrame, # Sample locations as `Point` or `MultiPoint` geometries
+    ) -> list: # Raster value at each point, in the order of `gdf.get_coordinates()`
+        "Read the raster value of the cell under each point of `gdf`."
         coords = [(x, y) for x, y in gdf.get_coordinates().values]
         pixel_coords = [transform.rowcol(self.affine, *pair) for pair in coords]
         return [self.band_data[int(x), int(y)] for (x, y) in pixel_coords]
         
-    def collect(self, 
-                gdf:gpd.GeoDataFrame # loc_id and Point/Multipoint geometry of samples where to measure.
-               ) -> gpd.GeoDataFrame:
+    def collect(self,
+        gdf:gpd.GeoDataFrame, # Sample locations as `Point` or `MultiPoint` geometries, indexed by `loc_id`
+    ) -> gpd.GeoDataFrame: # One `Point` per row with its measured `value`, indexed by `loc_id`
+        "Measure the raster at every point of `gdf`."
         return gdf.explode(index_parts=False).assign(value=self.get_values(gdf))
