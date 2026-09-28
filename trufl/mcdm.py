@@ -430,7 +430,7 @@ def dist_matrix(
 
     return dmatrix
 
-
+# %% ../nbs/05_mcdm.ipynb #24b295cc
 def lin_func(
     dmatrix, # Distance matrix
 ):
@@ -442,7 +442,7 @@ def lin_func(
         + np.mean(dmatrix)
     )
 
-
+# %% ../nbs/05_mcdm.ipynb #8a846d39
 def squared_dcov(
     j_func, # Double-centred distance matrix of column j
     l_func, # Double-centred distance matrix of column l
@@ -450,7 +450,7 @@ def squared_dcov(
     "Squared distance covariance of two columns."
     return np.sum(np.multiply(j_func, l_func)) / (j_func.shape[0] ** 2)
 
-
+# %% ../nbs/05_mcdm.ipynb #361a535c
 def squared_dcor(
     jl_dcov2, # Squared distance covariance of columns j and l
     j_dvar2, # Squared distance variance of column j
