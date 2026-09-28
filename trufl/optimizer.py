@@ -11,7 +11,6 @@ __all__ = ['Optimizer']
 import numpy as np
 import pandas as pd
 from fastcore.basics import patch
-from nbdev.showdoc import *
 from .mcdm import score, normalize, weigh
 
 # %% ../nbs/02_optimizer.ipynb #c55023ff
