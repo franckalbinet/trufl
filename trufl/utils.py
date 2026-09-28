@@ -1,4 +1,4 @@
-"""Utilities function to create a vector grid from raster, reproject raster and many others.
+"""Build a grid of administrative units over a raster, and reproject or anonymize rasters.
 
 Docs: https://franckalbinet.github.io/trufl/utils.html.md"""
 
@@ -17,11 +17,12 @@ import geopandas as gpd
 from shapely.geometry import Polygon, box
 
 # %% ../nbs/03_utils.ipynb #1c72d5c4
-def reproject_raster(src_fname:str, # Source raster geotiff file
-                     dst_fname:str, # Destination raster geotiff file
-                     dst_crs:str='EPSG:4326', # EPSG code to project to
-                     ) -> None:
-    "Reproject a GeoTiff file to specified crs"
+def reproject_raster(
+    src_fname:str, # Path to the source GeoTIFF
+    dst_fname:str, # Path of the reprojected GeoTIFF to write
+    dst_crs:str='EPSG:4326', # Target coordinate reference system
+) -> None:
+    "Reproject every band of `src_fname` to `dst_crs` and write the result to `dst_fname`."
     with rasterio.open(src_fname) as src:
         transform, width, height = calculate_default_transform(
             src.crs, dst_crs, src.width, src.height, *src.bounds)
@@ -47,12 +48,12 @@ def reproject_raster(src_fname:str, # Source raster geotiff file
 
 # %% ../nbs/03_utils.ipynb #3dbcbba1
 def gridder(
-    fname_raster:str, # The path to the raster file.
-    band:int=1, # The band number to use. Defaults to 1.
-    nrows:int=10, # The number of rows in the grid. Defaults to 10.
-    ncols:int=10, # The number of columns in the grid. Defaults to 10.
-    ) -> gpd.GeoDataFrame: # A GeoDataFrame of the grid cells geometry with 'loc_id' as index.
-    "Generate a grid of polygons overlaid on a raster file."
+    fname_raster:str, # Path to the raster file
+    band:int=1, # Band to read. Unused: the grid depends only on the raster's bounds and CRS
+    nrows:int=10, # Number of grid rows
+    ncols:int=10, # Number of grid columns
+) -> gpd.GeoDataFrame: # One polygon per grid cell, indexed by `loc_id`, in the raster's CRS
+    "Split the extent of `fname_raster` into an `nrows` by `ncols` grid of polygons."
     with rasterio.open(fname_raster) as f:
         raster = f.read(band)
         bounds = f.bounds
@@ -94,12 +95,13 @@ def gridder(
     return gdf
 
 # %% ../nbs/03_utils.ipynb #ffd4495e
-def anonymize_raster(fname_raster:str, # The path to the raster file.
-                     new_lon_origin:float, # Longitude of the new origin
-                     new_lat_origin:float, # Latitude of the new origin
-                     band:int=1, # The band number to use. Defaults to 1.
-                     ) -> None:
-    "Anonymze a raster by translating it to specified location and values standardized."
+def anonymize_raster(
+    fname_raster:str, # Path to the raster file
+    new_lon_origin:float, # Longitude of the new upper-left corner
+    new_lat_origin:float, # Latitude of the new upper-left corner
+    band:int=1, # Band to anonymize
+) -> None:
+    "Move a raster to a new origin and rescale its values to [0, 1]."
     with rasterio.open(src_fname) as src:
         # Calculate the new transform based on the new origin and the same resolution
         new_transform = from_origin(new_lon_origin, new_lat_origin, src.res[0], src.res[1])

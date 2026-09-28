@@ -11,10 +11,10 @@ __all__ = ['read_shapefile', 'read_geojson']
 def read_shapefile(
     shp:str, # Path to the shapefile
 ):
-    "Read `shp` into a `GeoDataFrame`. Not implemented yet: returns `None`."
+    "Read `shp` into a `GeoDataFrame`. Not implemented yet."
 
 # %% ../nbs/00_reader.ipynb #1b49ac2e
 def read_geojson(
     shp:str, # Path to the GeoJSON file
 ):
-    "Read `shp` into a `GeoDataFrame`. Not implemented yet: returns `None`."
+    "Read `shp` into a `GeoDataFrame`. Not implemented yet."

@@ -28,8 +28,8 @@ class Optimizer:
 @patch
 def get_rank(self:Optimizer,
     is_benefit_x:list, # One flag per criterion: `True` if a high value raises sampling priority (benefit), `False` if a low value does (cost)
-    w_vector:list=None, # Weight of each criterion, summing to 1; computed with `w_method` if `None`
-    n_method:str=None, # Normalization method: `LINEAR1`, `LINEAR2`, `LINEAR3` or `VECTOR`; `None` requires values already in [0, 1]
+    w_vector:list=None, # Weight of each criterion, summing to 1, or `None` to compute weights with `w_method`
+    n_method:str=None, # Normalization method: `LINEAR1`, `LINEAR2`, `LINEAR3`, `VECTOR`, or `None` for values already in [0, 1]
     c_method:str=None, # Correlation method for `CRITIC` and `VIC` weighting: `PEARSON`, `ABSPEARSON` or `DCOR`
     w_method:str=None, # Weighting method used when `w_vector` is `None`: `MW`, `EM`, `SD`, `CRITIC` or `VIC`
     s_method:str=None, # Scoring method: `CP` or `TOPSIS`. Required
