@@ -3,7 +3,7 @@ website:
     contents:
       - text: Overview
         href: index.ipynb
-      - section: Source code
+      - section: API reference
         contents:
           - 00_reader.ipynb
           - 01_sampler.ipynb
