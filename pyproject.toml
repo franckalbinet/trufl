@@ -1,0 +1,32 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "trufl"
+dynamic = ["version"]
+description = "Optimize adaptive sampling"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{name = "Floris Abrams"}, {name = "Franck Albinet", email = "franckalbinet@gmail.com"}]
+keywords = ['nbdev', 'jupyter', 'notebook', 'python']
+classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
+dependencies = ['fastcore', 'geopandas', 'rasterio', 'pysal>=24.1']
+
+[project.urls]
+Repository = "https://github.com/franckalbinet/trufl"
+Documentation = "https://franckalbinet.github.io/trufl"
+
+[project.entry-points.nbdev]
+trufl = "trufl._modidx:d"
+
+[tool.setuptools.dynamic]
+version = {attr = "trufl.__version__"}
+
+[tool.setuptools.packages.find]
+include = ["trufl"]
+
+[tool.nbdev]
+jupyter_hooks = true
+custom_sidebar = true
