@@ -28,7 +28,7 @@ class Optimizer:
 @patch
 def get_rank(self:Optimizer, 
              is_benefit_x:list,
-             w_vector:list,  
+             w_vector:list=None,  
             n_method:str=None,
             c_method:str =None, 
             w_method:str=None,
