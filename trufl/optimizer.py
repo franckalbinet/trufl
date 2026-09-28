@@ -1,4 +1,4 @@
-"""Fill in a module description here
+"""Rank locations by sampling priority from their state variables, using multiple-criteria decision-making.
 
 Docs: https://franckalbinet.github.io/trufl/optimizer.html.md"""
 
@@ -15,10 +15,10 @@ from .mcdm import score, normalize, weigh
 
 # %% ../nbs/02_optimizer.ipynb #c55023ff
 class Optimizer:
+    "Rank locations by sampling priority from their state variables."
     def __init__(self,
-                 state:pd.DataFrame # a dataframe with the state of the administrative boundaries
-                 ):
-        "Optimize the number of points for t. Provided the number of points to sample in t based on t-1, return values number of sample points."
+        state:pd.DataFrame, # One row per `loc_id` and one column per criterion, as returned by calling a `State`
+    ):
         self.state = state
         
         self.matrix = state.to_numpy()
@@ -26,15 +26,15 @@ class Optimizer:
 
 # %% ../nbs/02_optimizer.ipynb #9d6313f3
 @patch
-def get_rank(self:Optimizer, 
-             is_benefit_x:list,
-             w_vector:list=None,  
-            n_method:str=None,
-            c_method:str =None, 
-            w_method:str=None,
-            s_method:str=None
-            ):
-    "Determines the rank of the administrative polygon based on the provided states."
+def get_rank(self:Optimizer,
+    is_benefit_x:list, # One flag per criterion: `True` if a high value raises sampling priority (benefit), `False` if a low value does (cost)
+    w_vector:list=None, # Weight of each criterion, summing to 1; computed with `w_method` if `None`
+    n_method:str=None, # Normalization method: `LINEAR1`, `LINEAR2`, `LINEAR3` or `VECTOR`; `None` requires values already in [0, 1]
+    c_method:str=None, # Correlation method for `CRITIC` and `VIC` weighting: `PEARSON`, `ABSPEARSON` or `DCOR`
+    w_method:str=None, # Weighting method used when `w_vector` is `None`: `MW`, `EM`, `SD`, `CRITIC` or `VIC`
+    s_method:str=None, # Scoring method: `CP` or `TOPSIS`. Required
+) -> pd.DataFrame: # A `rank` column indexed by `loc_id`, sorted from highest priority (rank 1) to lowest
+    "Rank each location in `state` by sampling priority."
     # normailize the matrix
     z_matrix, is_benefit_z = normalize(self.matrix, is_benefit_x, n_method)
     

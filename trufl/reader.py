@@ -1,4 +1,4 @@
-"""Fill in a module description here
+"""Read administrative units and field measurements from vector files. The readers are placeholders and are not implemented yet.
 
 Docs: https://franckalbinet.github.io/trufl/reader.html.md"""
 
@@ -8,11 +8,13 @@ Docs: https://franckalbinet.github.io/trufl/reader.html.md"""
 __all__ = ['read_shapefile', 'read_geojson']
 
 # %% ../nbs/00_reader.ipynb #fb96ddb5
-def read_shapefile(shp):
-    # return geopandas
-    pass
+def read_shapefile(
+    shp:str, # Path to the shapefile
+):
+    "Read `shp` into a `GeoDataFrame`. Not implemented yet: returns `None`."
 
 # %% ../nbs/00_reader.ipynb #1b49ac2e
-def read_geojson(shp):
-    # return geopandas
-    pass
+def read_geojson(
+    shp:str, # Path to the GeoJSON file
+):
+    "Read `shp` into a `GeoDataFrame`. Not implemented yet: returns `None`."
