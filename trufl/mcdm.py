@@ -1,4 +1,4 @@
-"""Multiple-criteria decision-making
+"""Normalize, weigh and score decision matrices with multiple-criteria decision-making (MCDM) methods.
 
 Docs: https://franckalbinet.github.io/trufl/mcdm.html.md"""
 
@@ -6,34 +6,65 @@ Docs: https://franckalbinet.github.io/trufl/mcdm.html.md"""
 
 # %% auto #0
 __all__ = ['is_normalized_matrix', 'is_normalized_vector', 'check_scoring_input', 'check_weighting_input',
-           'check_normalization_input', 'abspearson', 'dcor', 'squared_dcov_matrix', 'dist_matrix', 'lin_func',
-           'squared_dcov', 'squared_dcor', 'pearson', 'correlate', 'em', 'mw', 'sd', 'vic', 'linear1', 'linear2',
-           'linear3', 'vector', 'normalize', 'critic', 'weigh', 'topsis', 'cp', 'score']
+           'check_normalization_input', 'linear1', 'linear2', 'linear3', 'vector', 'normalize', 'abspearson', 'dcor',
+           'squared_dcov_matrix', 'dist_matrix', 'lin_func', 'squared_dcov', 'squared_dcor', 'pearson', 'correlate',
+           'em', 'mw', 'sd', 'vic', 'critic', 'weigh', 'topsis', 'cp', 'score']
 
 # %% ../nbs/05_mcdm.ipynb #05c1b48a
+# Adapted from https://github.com/akestoridis/mcdm under the MIT License:
+#
+# MIT License
+#
+# Copyright (c) 2020-2022 Dimitrios-Georgios Akestoridis
+#
+# Permission is hereby granted, free of charge, to any person obtaining
+# a copy of this software and associated documentation files (the
+# "Software"), to deal in the Software without restriction, including
+# without limitation the rights to use, copy, modify, merge, publish,
+# distribute, sublicense, and/or sell copies of the Software, and to
+# permit persons to whom the Software is furnished to do so, subject to
+# the following conditions:
+#
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+# IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY
+# CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT,
+# TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE
+# SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 import numpy as np
 
 # %% ../nbs/05_mcdm.ipynb #9a09e6e1
-def is_normalized_matrix(z_matrix: np.array):
-    """
-    Return a Boolean value to indicate whether the matrix is normalized or not
-    """
+def is_normalized_matrix(
+    z_matrix:np.array, # Matrix to check
+) -> bool:
+    "`True` if every element of `z_matrix` is in [0, 1]."
     return (
         np.sum(np.less(z_matrix, 0.0)) == 0
         and np.sum(np.greater(z_matrix, 1.0)) == 0
     )
 
 # %% ../nbs/05_mcdm.ipynb #658cad6e
-def is_normalized_vector(w_vector: list):
-    "Return a Boolean value to indicate whether the vector is normalized or not"
+def is_normalized_vector(
+    w_vector:list, # Weights to check
+) -> bool:
+    "`True` if no weight in `w_vector` is negative and the weights sum to 1."
     return (
         np.sum(np.less(w_vector, 0.0)) == 0
         and np.isclose(np.sum(w_vector), 1.0)
     )
 
 # %% ../nbs/05_mcdm.ipynb #97bb6b2d
-def check_scoring_input(z_matrix:np.array, w_vector:list, is_benefit_z:list, s_method:str):
-    "Raise an exception if any argument is inappropriate for the corresponding scoring method"
+def check_scoring_input(
+    z_matrix:np.array, # Normalized decision matrix
+    w_vector:np.array, # Weight of each criterion
+    is_benefit_z:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+    s_method:str, # Scoring method
+):
+    "Raise `ValueError` if the inputs do not suit scoring method `s_method`."
     if s_method.upper() in {"SAW", "MEW", "TOPSIS", "MTOPSIS", "CP"}:
         if not is_normalized_matrix(z_matrix):
             raise ValueError(
@@ -60,8 +91,12 @@ def check_scoring_input(z_matrix:np.array, w_vector:list, is_benefit_z:list, s_m
         raise ValueError("Unknown scoring method ({})".format(s_method))
 
 # %% ../nbs/05_mcdm.ipynb #bc9fb9a1
-def check_weighting_input(z_matrix:np.array, c_method:str, w_method:str):
-    "Raise an exception if any argument is inappropriate for the corresponding weighting method"
+def check_weighting_input(
+    z_matrix:np.array, # Normalized decision matrix
+    c_method:str, # Correlation method, used by `CRITIC` and `VIC`
+    w_method:str, # Weighting method
+):
+    "Raise `ValueError` if the inputs do not suit weighting method `w_method`."
     if w_method.upper() in {"MW", "EM", "SD", "CRITIC", "VIC"}:
         if not is_normalized_matrix(z_matrix):
             raise ValueError(
@@ -102,8 +137,12 @@ def check_weighting_input(z_matrix:np.array, c_method:str, w_method:str):
         raise ValueError("Unknown weighting method ({})".format(w_method))
 
 # %% ../nbs/05_mcdm.ipynb #cc70b4cd
-def check_normalization_input(x_matrix:np.array, is_benefit_x:list, n_method:str):
-    "Raise an exception if any argument is inappropriate for the corresponding normalization method"
+def check_normalization_input(
+    x_matrix:np.array, # Decision matrix
+    is_benefit_x:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+    n_method:str, # Normalization method, or `None` for a matrix already in [0, 1]
+):
+    "Raise `ValueError` if the inputs do not suit normalization method `n_method`."
     if (
         n_method is None
         or n_method.upper() in {"LINEAR1", "LINEAR2", "LINEAR3", "VECTOR"}
@@ -130,17 +169,173 @@ def check_normalization_input(x_matrix:np.array, is_benefit_x:list, n_method:str
     else:
         raise ValueError("Unknown normalization method ({})".format(n_method))
 
+# %% ../nbs/05_mcdm.ipynb #c69d14c8
+def linear1(
+    x_matrix:np.array, # Decision matrix
+    is_benefit_x:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+) -> tuple: # The normalized matrix and the new benefit flags, `(z_matrix, is_benefit_z)`
+    "Divide each benefit criterion by its maximum, and the minimum of each cost criterion by its values. Every criterion becomes a benefit criterion."
+    # Perform sanity checks
+    x_matrix = np.array(x_matrix, dtype=np.float64)
+    check_normalization_input(x_matrix, is_benefit_x, "Linear1")
+
+    # Construct the normalized matrix
+    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
+    for j in range(x_matrix.shape[1]):
+        if is_benefit_x[j]:
+            max_value = np.nanmax(x_matrix[:, j])
+            if max_value == 0.0:
+                raise ValueError(
+                    "The maximum value of a benefit criterion must not be "
+                    + "zero in order to apply the Linear1 normalization "
+                    + "method",
+                )
+            z_matrix[:, j] = x_matrix[:, j] / max_value
+        else:
+            min_value = np.nanmin(x_matrix[:, j])
+            if min_value == 0.0:
+                raise ValueError(
+                    "The minimum value of a cost criterion must not be zero "
+                    + "in order to apply the Linear1 normalization method",
+                )
+            z_matrix[:, j] = min_value / x_matrix[:, j]
+
+    # All criteria have been transformed into benefit criteria
+    is_benefit_z = [True for _ in range(x_matrix.shape[1])]
+
+    return z_matrix, is_benefit_z
+
+# %% ../nbs/05_mcdm.ipynb #0bc1e19c
+def linear2(
+    x_matrix:np.array, # Decision matrix
+    is_benefit_x:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+) -> tuple: # The normalized matrix and the new benefit flags, `(z_matrix, is_benefit_z)`
+    "Rescale each criterion to [0, 1] between its minimum and maximum, reversed for cost criteria. Every criterion becomes a benefit criterion."
+    # Perform sanity checks
+    x_matrix = np.array(x_matrix, dtype=np.float64)
+    check_normalization_input(x_matrix, is_benefit_x, "Linear2")
+
+    # Construct the normalized matrix
+    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
+    for j in range(x_matrix.shape[1]):
+        denominator = np.nanmax(x_matrix[:, j]) - np.nanmin(x_matrix[:, j])
+        if denominator == 0.0:
+            raise ValueError(
+                "The maximum value of a criterion must not be equal to its "
+                + "minimum value in order to apply the Linear2 normalization "
+                + "method",
+            )
+        if is_benefit_x[j]:
+            z_matrix[:, j] = (
+                (x_matrix[:, j] - np.nanmin(x_matrix[:, j])) / denominator
+            )
+        else:
+            z_matrix[:, j] = (
+                (np.nanmax(x_matrix[:, j]) - x_matrix[:, j]) / denominator
+            )
+
+    # All criteria have been transformed into benefit criteria
+    is_benefit_z = [True for _ in range(x_matrix.shape[1])]
+
+    return z_matrix, is_benefit_z
+
+
+# %% ../nbs/05_mcdm.ipynb #a6f8febf
+def linear3(
+    x_matrix:np.array, # Decision matrix
+    is_benefit_x:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+) -> tuple: # The normalized matrix and the new benefit flags, `(z_matrix, is_benefit_z)`
+    "Divide each criterion by its sum. Benefit and cost flags are unchanged."
+    # Perform sanity checks
+    x_matrix = np.array(x_matrix, dtype=np.float64)
+    check_normalization_input(x_matrix, is_benefit_x, "Linear3")
+
+    # Construct the normalized matrix
+    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
+    for j in range(x_matrix.shape[1]):
+        denominator = np.nansum(x_matrix[:, j])
+        if denominator == 0.0:
+            raise ValueError(
+                "The sum of a criterion's values must not be equal to zero "
+                + "in order to apply the Linear3 normalization method",
+            )
+        z_matrix[:, j] = x_matrix[:, j] / denominator
+
+    # The criteria have not been transformed into benefit or cost criteria
+    is_benefit_z = is_benefit_x.copy()
+
+    return z_matrix, is_benefit_z
+
+
+# %% ../nbs/05_mcdm.ipynb #32cd5078
+def vector(
+    x_matrix:np.array, # Decision matrix
+    is_benefit_x:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+) -> tuple: # The normalized matrix and the new benefit flags, `(z_matrix, is_benefit_z)`
+    "Divide each criterion by its Euclidean norm. Benefit and cost flags are unchanged."
+    # Perform sanity checks
+    x_matrix = np.array(x_matrix, dtype=np.float64)
+    check_normalization_input(x_matrix, is_benefit_x, "Vector")
+
+    # Construct the normalized matrix
+    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
+    for j in range(x_matrix.shape[1]):
+        denominator = np.sqrt(np.nansum(x_matrix[:, j] ** 2))
+        if denominator == 0.0:
+            raise ValueError(
+                "The square root of a criterion's sum of squared values must "
+                + "not be equal to zero in order to apply the Vector "
+                + "normalization method",
+            )
+        z_matrix[:, j] = x_matrix[:, j] / denominator
+
+    # The criteria have not been transformed into benefit or cost criteria
+    is_benefit_z = is_benefit_x.copy()
+
+    return z_matrix, is_benefit_z
+
+
+# %% ../nbs/05_mcdm.ipynb #1d8c0dbb
+def normalize(
+    x_matrix:np.array, # Decision matrix
+    is_benefit_x:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+    n_method:str, # `LINEAR1`, `LINEAR2`, `LINEAR3`, `VECTOR`, or `None` to keep a matrix already in [0, 1]
+) -> tuple: # The normalized matrix and the new benefit flags, `(z_matrix, is_benefit_z)`
+    "Normalize `x_matrix` with `n_method`."
+    # Use the selected normalization method
+    if n_method is None:
+        # Perform sanity checks
+        x_matrix = np.array(x_matrix, dtype=np.float64)
+        check_normalization_input(x_matrix, is_benefit_x, None)
+
+        return np.copy(x_matrix), is_benefit_x.copy()
+    elif n_method.upper() == "LINEAR1":
+        return linear1(x_matrix, is_benefit_x)
+    elif n_method.upper() == "LINEAR2":
+        return linear2(x_matrix, is_benefit_x)
+    elif n_method.upper() == "LINEAR3":
+        return linear3(x_matrix, is_benefit_x)
+    elif n_method.upper() == "VECTOR":
+        return vector(x_matrix, is_benefit_x)
+    else:
+        raise ValueError("Unknown normalization method ({})".format(n_method))
+
+
 # %% ../nbs/05_mcdm.ipynb #e915f019
-def abspearson(z_matrix:np.array):
-    "Return the absolute value of the Pearson correlation coefficients of the provided matrix."
+def abspearson(
+    z_matrix:np.array, # Normalized decision matrix
+) -> np.ndarray:
+    "Absolute Pearson correlation between every pair of columns of `z_matrix`."
     # Make sure that the provided matrix is a float64 NumPy array
     z_matrix = np.array(z_matrix, dtype=np.float64)
 
     return np.absolute(np.corrcoef(z_matrix, rowvar=False))
 
 # %% ../nbs/05_mcdm.ipynb #b24f548d
-def dcor(z_matrix:np.array):
-    "Return the distance correlation coefficients of the provided matrix."
+def dcor(
+    z_matrix:np.array, # Normalized decision matrix
+) -> np.ndarray:
+    "Distance correlation between every pair of columns of `z_matrix`."
     # Make sure that the provided matrix is a float64 NumPy array
     z_matrix = np.array(z_matrix, dtype=np.float64)
 
@@ -181,8 +376,10 @@ def dcor(z_matrix:np.array):
     return dcor_matrix
 
 # %% ../nbs/05_mcdm.ipynb #3602c475
-def squared_dcov_matrix(z_matrix:np.array):
-    " Return the matrix of squared distance covariance between the columns of the provided matrix."
+def squared_dcov_matrix(
+    z_matrix:np.array, # Normalized decision matrix
+) -> np.ndarray:
+    "Squared distance covariance between every pair of columns of `z_matrix`."
     # Initialize the distance covariance matrix
     dcov2_matrix = np.zeros(
         (z_matrix.shape[1], z_matrix.shape[1]),
@@ -214,8 +411,10 @@ def squared_dcov_matrix(z_matrix:np.array):
     return dcov2_matrix
 
 # %% ../nbs/05_mcdm.ipynb #03b36ea9
-def dist_matrix(z_vector:np.array):
-    "Return the Euclidean distance matrix of the provided vector."
+def dist_matrix(
+    z_vector:np.array, # One column of a decision matrix
+) -> np.ndarray:
+    "Absolute difference between every pair of elements of `z_vector`."
     # Initialize the Euclidean distance matrix
     dmatrix = np.zeros(
         (z_vector.shape[0], z_vector.shape[0]),
@@ -232,10 +431,10 @@ def dist_matrix(z_vector:np.array):
     return dmatrix
 
 
-def lin_func(dmatrix):
-    """
-    Return the result of the linear function for the provided distance matrix.
-    """
+def lin_func(
+    dmatrix, # Distance matrix
+):
+    "Double-centre `dmatrix`: subtract its row and column means, then add its grand mean."
     return (
         dmatrix
         - np.mean(dmatrix, axis=0)
@@ -244,22 +443,27 @@ def lin_func(dmatrix):
     )
 
 
-def squared_dcov(j_func, l_func):
-    """
-    Return the squared distance covariance between the corresponding columns.
-    """
+def squared_dcov(
+    j_func, # Double-centred distance matrix of column j
+    l_func, # Double-centred distance matrix of column l
+):
+    "Squared distance covariance of two columns."
     return np.sum(np.multiply(j_func, l_func)) / (j_func.shape[0] ** 2)
 
 
-def squared_dcor(jl_dcov2, j_dvar2, l_dvar2):
-    """
-    Return the squared distance correlation between the corresponding columns.
-    """
+def squared_dcor(
+    jl_dcov2, # Squared distance covariance of columns j and l
+    j_dvar2, # Squared distance variance of column j
+    l_dvar2, # Squared distance variance of column l
+):
+    "Squared distance correlation of two columns."
     return jl_dcov2 / np.sqrt(j_dvar2 * l_dvar2)
 
 # %% ../nbs/05_mcdm.ipynb #95d3a395
-def pearson(z_matrix:np.array):
-    "Return the Pearson correlation coefficients of the provided matrix."
+def pearson(
+    z_matrix:np.array, # Normalized decision matrix
+) -> np.ndarray:
+    "Pearson correlation between every pair of columns of `z_matrix`."
     # Make sure that the provided matrix is a float64 NumPy array
     z_matrix = np.array(z_matrix, dtype=np.float64)
 
@@ -267,8 +471,11 @@ def pearson(z_matrix:np.array):
 
 
 # %% ../nbs/05_mcdm.ipynb #a274be5c
-def correlate(z_matrix:np.array, c_method:str):
-    "Return the selected correlation coefficients of the provided matrix."
+def correlate(
+    z_matrix:np.array, # Normalized decision matrix
+    c_method:str, # `PEARSON`, `ABSPEARSON` or `DCOR`
+) -> np.ndarray:
+    "Correlation between every pair of columns of `z_matrix`, computed with `c_method`."
     # Use the selected correlation method
     if c_method.upper() == "PEARSON":
         return pearson(z_matrix)
@@ -281,8 +488,10 @@ def correlate(z_matrix:np.array, c_method:str):
 
 
 # %% ../nbs/05_mcdm.ipynb #43486373
-def em(z_matrix: np.array):
-    "Return the weight vector of the provided decision matrix using the Entropy Measure method."
+def em(
+    z_matrix:np.array, # Normalized decision matrix whose columns each sum to 1, as `LINEAR3` produces
+) -> np.ndarray:
+    "Criterion weights from the Entropy Measure (EM) method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     check_weighting_input(z_matrix, "", "EM")
@@ -305,8 +514,10 @@ def em(z_matrix: np.array):
 
 
 # %% ../nbs/05_mcdm.ipynb #6f0d984d
-def mw(z_matrix:np.array):
-    "Return the weight vector of the provided decision matrix using the Mean Weights method."
+def mw(
+    z_matrix:np.array, # Normalized decision matrix
+) -> np.ndarray:
+    "Equal weights for every criterion, from the Mean Weights (MW) method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     check_weighting_input(z_matrix, "", "MW")
@@ -318,8 +529,10 @@ def mw(z_matrix:np.array):
 
 
 # %% ../nbs/05_mcdm.ipynb #cf9b8a2d
-def sd(z_matrix):
-    "Return the weight vector of the provided decision matrix using the Standard Deviation method."
+def sd(
+    z_matrix:np.array, # Normalized decision matrix
+) -> np.ndarray:
+    "Criterion weights proportional to the standard deviation of each column, from the Standard Deviation (SD) method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     check_weighting_input(z_matrix, "", "SD")
@@ -333,8 +546,11 @@ def sd(z_matrix):
 
 
 # %% ../nbs/05_mcdm.ipynb #e9d496e0
-def vic(z_matrix:np.array, c_method:str="dCor"):
-    "Return the weight vector of the provided decision matrix using the Variability and Interdependencies of Criteria method."
+def vic(
+    z_matrix:np.array, # Normalized decision matrix
+    c_method:str="dCor", # `ABSPEARSON` or `DCOR`. `None` means `DCOR`
+) -> np.ndarray:
+    "Criterion weights from the Variability and Interdependencies of Criteria (VIC) method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     if c_method is None:
@@ -357,145 +573,12 @@ def vic(z_matrix:np.array, c_method:str="dCor"):
     return imp_vector / np.sum(imp_vector)
 
 
-# %% ../nbs/05_mcdm.ipynb #c69d14c8
-def linear1(x_matrix:np.array, is_benefit_x:list):
-    "Return the normalized version of the provided matrix using the Linear Normalization (1) method."
-    # Perform sanity checks
-    x_matrix = np.array(x_matrix, dtype=np.float64)
-    check_normalization_input(x_matrix, is_benefit_x, "Linear1")
-
-    # Construct the normalized matrix
-    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
-    for j in range(x_matrix.shape[1]):
-        if is_benefit_x[j]:
-            max_value = np.nanmax(x_matrix[:, j])
-            if max_value == 0.0:
-                raise ValueError(
-                    "The maximum value of a benefit criterion must not be "
-                    + "zero in order to apply the Linear1 normalization "
-                    + "method",
-                )
-            z_matrix[:, j] = x_matrix[:, j] / max_value
-        else:
-            min_value = np.nanmin(x_matrix[:, j])
-            if min_value == 0.0:
-                raise ValueError(
-                    "The minimum value of a cost criterion must not be zero "
-                    + "in order to apply the Linear1 normalization method",
-                )
-            z_matrix[:, j] = min_value / x_matrix[:, j]
-
-    # All criteria have been transformed into benefit criteria
-    is_benefit_z = [True for _ in range(x_matrix.shape[1])]
-
-    return z_matrix, is_benefit_z
-
-# %% ../nbs/05_mcdm.ipynb #0bc1e19c
-def linear2(x_matrix:np.array, is_benefit_x:list):
-    "Return the normalized version of the provided matrix using the Linear Normalization (2) method."
-    # Perform sanity checks
-    x_matrix = np.array(x_matrix, dtype=np.float64)
-    check_normalization_input(x_matrix, is_benefit_x, "Linear2")
-
-    # Construct the normalized matrix
-    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
-    for j in range(x_matrix.shape[1]):
-        denominator = np.nanmax(x_matrix[:, j]) - np.nanmin(x_matrix[:, j])
-        if denominator == 0.0:
-            raise ValueError(
-                "The maximum value of a criterion must not be equal to its "
-                + "minimum value in order to apply the Linear2 normalization "
-                + "method",
-            )
-        if is_benefit_x[j]:
-            z_matrix[:, j] = (
-                (x_matrix[:, j] - np.nanmin(x_matrix[:, j])) / denominator
-            )
-        else:
-            z_matrix[:, j] = (
-                (np.nanmax(x_matrix[:, j]) - x_matrix[:, j]) / denominator
-            )
-
-    # All criteria have been transformed into benefit criteria
-    is_benefit_z = [True for _ in range(x_matrix.shape[1])]
-
-    return z_matrix, is_benefit_z
-
-
-# %% ../nbs/05_mcdm.ipynb #a6f8febf
-def linear3(x_matrix:np.array, is_benefit_x:list):
-    "Return the normalized version of the provided matrix using the Linear Normalization (3) method."
-    # Perform sanity checks
-    x_matrix = np.array(x_matrix, dtype=np.float64)
-    check_normalization_input(x_matrix, is_benefit_x, "Linear3")
-
-    # Construct the normalized matrix
-    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
-    for j in range(x_matrix.shape[1]):
-        denominator = np.nansum(x_matrix[:, j])
-        if denominator == 0.0:
-            raise ValueError(
-                "The sum of a criterion's values must not be equal to zero "
-                + "in order to apply the Linear3 normalization method",
-            )
-        z_matrix[:, j] = x_matrix[:, j] / denominator
-
-    # The criteria have not been transformed into benefit or cost criteria
-    is_benefit_z = is_benefit_x.copy()
-
-    return z_matrix, is_benefit_z
-
-
-# %% ../nbs/05_mcdm.ipynb #32cd5078
-def vector(x_matrix:np.array, is_benefit_x:list):
-    "Return the normalized version of the provided matrix using the Vector Normalization method."
-    # Perform sanity checks
-    x_matrix = np.array(x_matrix, dtype=np.float64)
-    check_normalization_input(x_matrix, is_benefit_x, "Vector")
-
-    # Construct the normalized matrix
-    z_matrix = np.zeros(x_matrix.shape, dtype=np.float64)
-    for j in range(x_matrix.shape[1]):
-        denominator = np.sqrt(np.nansum(x_matrix[:, j] ** 2))
-        if denominator == 0.0:
-            raise ValueError(
-                "The square root of a criterion's sum of squared values must "
-                + "not be equal to zero in order to apply the Vector "
-                + "normalization method",
-            )
-        z_matrix[:, j] = x_matrix[:, j] / denominator
-
-    # The criteria have not been transformed into benefit or cost criteria
-    is_benefit_z = is_benefit_x.copy()
-
-    return z_matrix, is_benefit_z
-
-
-# %% ../nbs/05_mcdm.ipynb #1d8c0dbb
-def normalize(x_matrix:np.array, is_benefit_x:list, n_method:str):
-    "Return the normalized version of the provided matrix using the selected normalization method."
-    # Use the selected normalization method
-    if n_method is None:
-        # Perform sanity checks
-        x_matrix = np.array(x_matrix, dtype=np.float64)
-        check_normalization_input(x_matrix, is_benefit_x, None)
-
-        return np.copy(x_matrix), is_benefit_x.copy()
-    elif n_method.upper() == "LINEAR1":
-        return linear1(x_matrix, is_benefit_x)
-    elif n_method.upper() == "LINEAR2":
-        return linear2(x_matrix, is_benefit_x)
-    elif n_method.upper() == "LINEAR3":
-        return linear3(x_matrix, is_benefit_x)
-    elif n_method.upper() == "VECTOR":
-        return vector(x_matrix, is_benefit_x)
-    else:
-        raise ValueError("Unknown normalization method ({})".format(n_method))
-
-
 # %% ../nbs/05_mcdm.ipynb #afe847c5
-def critic(z_matrix:np.array, c_method:str="Pearson"):
-    "Return the weight vector of the provided decision matrix using the Criteria Importance Through Intercriteria Correlation method."
+def critic(
+    z_matrix:np.array, # Normalized decision matrix
+    c_method:str="Pearson", # `PEARSON`, `ABSPEARSON` or `DCOR`. `None` means `PEARSON`
+) -> np.ndarray:
+    "Criterion weights from the Criteria Importance Through Intercriteria Correlation (CRITIC) method."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     if c_method is None:
@@ -520,8 +603,12 @@ def critic(z_matrix:np.array, c_method:str="Pearson"):
     return imp_vector / np.sum(imp_vector)
 
 # %% ../nbs/05_mcdm.ipynb #245125c7
-def weigh(z_matrix:np.array, w_method:str, c_method:str=None):
-    "Return the weight vector of the provided decision matrix using the selected weighting method."
+def weigh(
+    z_matrix:np.array, # Normalized decision matrix
+    w_method:str, # `MW`, `EM`, `SD`, `CRITIC` or `VIC`
+    c_method:str=None, # Correlation method for `CRITIC` and `VIC`
+) -> np.ndarray:
+    "Criterion weights of `z_matrix`, computed with `w_method`."
     # Use the selected weighting method
     if w_method.upper() == "MW":
         return mw(z_matrix)
@@ -538,8 +625,12 @@ def weigh(z_matrix:np.array, w_method:str, c_method:str=None):
 
 
 # %% ../nbs/05_mcdm.ipynb #d9f2a8ea
-def topsis(z_matrix:np.array, w_vector:str, is_benefit_z:list):
-    "Return the Technique for Order Preference by Similarity to Ideal Solution scores of the provided decision matrix with the provided weight vector."
+def topsis(
+    z_matrix:np.array, # Normalized decision matrix
+    w_vector:list, # Weight of each criterion
+    is_benefit_z:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+) -> tuple: # The scores and `True`, as `(s_vector, desc_order)`
+    "Score each alternative by its relative closeness to the ideal alternative, from 0 to 1, with the Technique for Order Preference by Similarity to Ideal Solution (TOPSIS). Higher is better."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     w_vector = np.array(w_vector, dtype=np.float64)
@@ -580,8 +671,12 @@ def topsis(z_matrix:np.array, w_vector:str, is_benefit_z:list):
 
 
 # %% ../nbs/05_mcdm.ipynb #a673e849
-def cp(z_matrix:np.array, w_vector:list, is_benefit_z:list):
-    "Return the Technique for Order Preference by Similarity to Ideal Solution scores of the provided decision matrix with the provided weight vector."
+def cp(
+    z_matrix:np.array, # Normalized decision matrix
+    w_vector:list, # Weight of each criterion
+    is_benefit_z:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+) -> tuple: # The scores and `False`, as `(s_vector, desc_order)`
+    "Score each alternative by its Euclidean distance to the ideal alternative, with Compromise Programming (CP). Lower is better."
     # Perform sanity checks
     z_matrix = np.array(z_matrix, dtype=np.float64)
     w_vector = np.array(w_vector, dtype=np.float64)
@@ -613,8 +708,13 @@ def cp(z_matrix:np.array, w_vector:list, is_benefit_z:list):
     return s_vector, desc_order
 
 # %% ../nbs/05_mcdm.ipynb #0a01a6f4
-def score(z_matrix:np.array, is_benefit_z:list, w_vector:list, s_method:str):
-    "Return the selected scores of the provided decision matrix with the provided weight vector."
+def score(
+    z_matrix:np.array, # Normalized decision matrix
+    is_benefit_z:list, # Benefit (`True`) or cost (`False`) flag of each criterion
+    w_vector:list, # Weight of each criterion
+    s_method:str, # `CP` or `TOPSIS`
+) -> tuple: # The scores, and `True` if higher scores rank first, as `(s_vector, desc_order)`
+    "Score each alternative of `z_matrix` with `s_method`."
     # Use the selected scoring method
     if s_method.upper() == "CP":
         return cp(z_matrix, w_vector, is_benefit_z)
