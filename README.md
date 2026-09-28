@@ -58,7 +58,7 @@ with rasterio.open(fname_raster) as src:
     plt.title('Simulated Ground Truth')
 ```
 
-![](index_files/figure-commonmark/cell-3-output-1.png)
+<img src="index_files/figure-commonmark/cell-3-output-1.png" width="516" height="337" />
 
 ### Simulate administrative units
 
@@ -103,7 +103,7 @@ plt.axis('off')
 plt.title('Simulated Administrative Units');
 ```
 
-![](index_files/figure-commonmark/cell-5-output-1.png)
+<img src="index_files/figure-commonmark/cell-5-output-1.png" width="470" height="410" />
 
 ### Round I: Optimize sampling based on prior at $t_0$
 
@@ -166,7 +166,7 @@ plt.axis('off')
 plt.title('Prior: Mean value at Administrative Unit level');
 ```
 
-![](index_files/figure-commonmark/cell-8-output-1.png)
+<img src="index_files/figure-commonmark/cell-8-output-1.png" width="511" height="389" />
 
 > [!TIP]
 >
@@ -221,7 +221,7 @@ plt.axis('off')
 plt.title('Sampling Priorirty Rank');
 ```
 
-![](index_files/figure-commonmark/cell-10-output-1.png)
+<img src="index_files/figure-commonmark/cell-10-output-1.png" width="516" height="394" />
 
 #### Informed random sampling
 
@@ -260,13 +260,13 @@ plt.title('Ranked Random Samples Location');
 
                                     geometry
     loc_id                                  
-    0        MULTIPOINT ((-1.2144 43.26727))
-    1       MULTIPOINT ((-1.21076 43.27288))
-    2       MULTIPOINT ((-1.21374 43.27918))
-    3       MULTIPOINT ((-1.20865 43.29382))
-    4       MULTIPOINT ((-1.21714 43.29809))
+    0       MULTIPOINT ((-1.21675 43.26623))
+    1        MULTIPOINT ((-1.21992 43.2773))
+    2       MULTIPOINT ((-1.22344 43.28498))
+    3       MULTIPOINT ((-1.21169 43.28804))
+    4       MULTIPOINT ((-1.21162 43.29773))
 
-![](index_files/figure-commonmark/cell-12-output-2.png)
+<img src="index_files/figure-commonmark/cell-12-output-2.png" width="470" height="410" />
 
 #### Emulating measurement campaign
 
@@ -287,13 +287,13 @@ plt.title('Measurements at Random Sampling Points');
 
                              geometry     value
     loc_id                                     
-    0        POINT (-1.2144 43.26727)  0.110955
-    1       POINT (-1.21076 43.27288)  0.111950
-    2       POINT (-1.21374 43.27918)  0.165048
-    3       POINT (-1.20865 43.29382)  0.221917
-    4       POINT (-1.21714 43.29809)  0.212401
+    0       POINT (-1.21675 43.26623)  0.134209
+    1        POINT (-1.21992 43.2773)  0.138135
+    2       POINT (-1.22344 43.28498)  0.000000
+    3       POINT (-1.21169 43.28804)  0.178089
+    4       POINT (-1.21162 43.29773)  0.243075
 
-![](index_files/figure-commonmark/cell-13-output-2.png)
+<img src="index_files/figure-commonmark/cell-13-output-2.png" width="492" height="398" />
 
 This marks the **end of our initial measurement efforts**, based on our prior knowledge of the phenomenon. **Going forward, we can use the additional insights gained during this phase** to enhance our future measurements.
 
@@ -332,11 +332,11 @@ state().head()
 |        | Max      | Min      | Standard Deviation | Count | Moran.I | Prior    |
 |--------|----------|----------|--------------------|-------|---------|----------|
 | loc_id |          |          |                    |       |         |          |
-| 0      | 0.110955 | 0.110955 | 0.0                | 1     | NaN     | 0.102492 |
-| 1      | 0.111950 | 0.111950 | 0.0                | 1     | NaN     | 0.125727 |
-| 2      | 0.165048 | 0.165048 | 0.0                | 1     | NaN     | 0.161802 |
-| 3      | 0.221917 | 0.221917 | 0.0                | 1     | NaN     | 0.184432 |
-| 4      | 0.212401 | 0.212401 | 0.0                | 1     | NaN     | 0.201405 |
+| 0      | 0.134209 | 0.134209 | 0.0                | 1     | NaN     | 0.102492 |
+| 1      | 0.138135 | 0.138135 | 0.0                | 1     | NaN     | 0.125727 |
+| 2      | 0.000000 | 0.000000 | 0.0                | 1     | NaN     | 0.161802 |
+| 3      | 0.178089 | 0.178089 | 0.0                | 1     | NaN     | 0.184432 |
+| 4      | 0.243075 | 0.243075 | 0.0                | 1     | NaN     | 0.201405 |
 
 </div>
 
@@ -370,7 +370,7 @@ plt.axis('off')
 plt.title('Sampling Priorirty Rank');
 ```
 
-![](index_files/figure-commonmark/cell-18-output-1.png)
+<img src="index_files/figure-commonmark/cell-18-output-1.png" width="516" height="394" />
 
 ``` python
 df_rank.head()
@@ -392,11 +392,11 @@ df_rank.head()
 |        | rank |
 |--------|------|
 | loc_id |      |
-| 24     | 1    |
-| 28     | 2    |
-| 26     | 3    |
-| 70     | 4    |
-| 78     | 5    |
+| 59     | 1    |
+| 24     | 2    |
+| 28     | 3    |
+| 27     | 4    |
+| 70     | 5    |
 
 </div>
 
@@ -413,11 +413,11 @@ n = rank_to_sample(df_rank['rank'].sort_index().values,
                    budget=budget_t1, min=1, policy="quantiles"); n
 ```
 
-    array([1, 1, 1, 1, 1, 3, 4, 8, 8, 4, 1, 1, 1, 1, 1, 3, 8, 4, 4, 8, 1, 1,
-           1, 1, 8, 4, 8, 8, 8, 8, 1, 1, 1, 4, 8, 8, 1, 3, 8, 4, 1, 1, 8, 8,
-           4, 3, 3, 3, 4, 4, 3, 8, 8, 3, 4, 4, 1, 1, 4, 8, 4, 8, 4, 8, 3, 3,
-           8, 4, 8, 8, 8, 4, 3, 3, 3, 1, 4, 3, 8, 8, 4, 3, 3, 3, 4, 4, 1, 3,
-           4, 1, 4, 3, 3, 4, 3, 3, 3, 3, 3, 4])
+    array([1, 1, 1, 1, 3, 1, 4, 8, 8, 3, 1, 1, 1, 1, 4, 4, 8, 4, 8, 8, 1, 1,
+           1, 4, 8, 8, 8, 8, 8, 8, 1, 3, 4, 4, 8, 4, 4, 1, 4, 8, 1, 4, 4, 8,
+           4, 1, 4, 4, 3, 3, 8, 8, 8, 3, 4, 3, 1, 4, 3, 8, 4, 8, 4, 3, 4, 8,
+           3, 4, 8, 8, 8, 3, 3, 4, 3, 1, 3, 4, 8, 8, 3, 3, 3, 3, 3, 3, 3, 1,
+           1, 1, 3, 4, 1, 4, 3, 3, 1, 3, 1, 1])
 
 ``` python
 sampler = Sampler(gdf_grid)
@@ -429,7 +429,7 @@ plt.axis('off')
 plt.title('Ranked Random Samples Location');
 ```
 
-![](index_files/figure-commonmark/cell-21-output-1.png)
+<img src="index_files/figure-commonmark/cell-21-output-1.png" width="470" height="410" />
 
 #### Second measurement campaign
 
@@ -443,7 +443,7 @@ plt.axis('off')
 plt.title('Measurements at Random Sampling Points');
 ```
 
-![](index_files/figure-commonmark/cell-22-output-1.png)
+<img src="index_files/figure-commonmark/cell-22-output-1.png" width="492" height="394" />
 
 ``` python
 measurements_sofar = pd.concat([measurements_t0, measurements_t1])
@@ -454,7 +454,7 @@ plt.axis('off')
 plt.title('Measurements after \n 2 informed measurement campaigns');
 ```
 
-![](index_files/figure-commonmark/cell-23-output-1.png)
+<img src="index_files/figure-commonmark/cell-23-output-1.png" width="492" height="418" />
 
 ## Delving deeper into the optimization process
 
@@ -532,10 +532,10 @@ df.head()
 |--------|------|
 | loc_id |      |
 | 71     | 1    |
-| 58     | 2    |
-| 35     | 3    |
-| 42     | 4    |
-| 69     | 5    |
+| 43     | 2    |
+| 74     | 3    |
+| 72     | 4    |
+| 35     | 5    |
 
 </div>
 
@@ -561,7 +561,7 @@ ax.legend(handles=[rank_legend, value_legend], loc='upper left', bbox_to_anchor=
 plt.show()
 ```
 
-![](index_files/figure-commonmark/cell-25-output-1.png)
+<img src="index_files/figure-commonmark/cell-25-output-1.png" width="1001" height="644" />
 
 ### Multi-year Adaptive sampling approach
 
@@ -639,7 +639,7 @@ plt.tight_layout()
 plt.show()
 ```
 
-![](index_files/figure-commonmark/cell-27-output-1.png)
+<img src="index_files/figure-commonmark/cell-27-output-1.png" width="1216" height="256" />
 
 ## Acknowledgements
 

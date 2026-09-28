@@ -30,3 +30,4 @@ include = ["trufl"]
 [tool.nbdev]
 jupyter_hooks = true
 custom_sidebar = true
+allowed_out_metadata_keys = ['image/png']
