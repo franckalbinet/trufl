@@ -1,4 +1,4 @@
-"""Generate random sample locations.
+"""Draw random sample locations inside areas, and split a sampling budget across areas by priority rank.
 
 Docs: https://franckalbinet.github.io/trufl/sampler.html.md"""
 
@@ -16,24 +16,26 @@ import numpy as np
 
 # %% ../nbs/01_sampler.ipynb #31312993
 class Sampler:
-    "Sample random location in `smp_areas`."
-    def __init__(self, 
-                 smp_areas:gpd.GeoDataFrame, # Geographical area to sample from.
-                ) -> gpd.GeoDataFrame: # loc_id, geometry (Point or MultiPoint).
+    "Draw random sample locations inside the areas of `smp_areas`."
+    def __init__(self,
+        smp_areas:gpd.GeoDataFrame, # Areas to sample from, such as the output of `gridder`, indexed by `loc_id`
+    ):
         fc.store_attr()
         
     @property
     def loc_ids(self):
+        "Unique `loc_id` values of `smp_areas`. Raises `ValueError` if any value repeats."
         arr = self.smp_areas.reset_index().loc_id.values
         if len(arr) != len(np.unique(arr)):
             raise ValueError('`loc_id` column contains non-unique values.')
         else:
             return arr
         
-    def sample(self, 
-               n:np.ndarray, # Number of samples
-               **kwargs
-              ):
+    def sample(self,
+        n:np.ndarray, # Number of points to draw in each area, in `smp_areas` order
+        **kwargs # Passed to `GeoSeries.sample_points`, such as `method` or `rng`
+    ) -> gpd.GeoDataFrame: # One `MultiPoint` per area, indexed by `loc_id`. Areas with `n` of 0 are left out
+        "Draw `n` random points inside each area."
         mask = n == 0    
         pts_gseries = self.smp_areas[~mask].sample_points(n[~mask], **kwargs)
         gdf_pts = gpd.GeoDataFrame(geometry=pts_gseries, index=pts_gseries.index)
@@ -41,12 +43,13 @@ class Sampler:
         return gdf_pts
 
 # %% ../nbs/01_sampler.ipynb #f5336728
-def rank_to_sample(ranks:np.ndarray, # Ranks sorted by `loc_id`s
-                   budget:int, # Total data collection budget available
-                   min:int=0, # Minimum of samples to be collected per area of interest
-                  policy:str="Weighted" # policy used form mapping ranks to number of samples
-                  ) -> np.ndarray: # Number of samples per area of interest to be collected in the same order as ranks
-    "Map ranks to number of samples to be collected"
+def rank_to_sample(
+    ranks:np.ndarray, # Rank of each area, in `loc_id` order. Rank 1 is the highest priority
+    budget:int, # Total number of samples to allocate
+    min:int=0, # Minimum number of samples per area
+    policy:str="Weighted", # Allocation policy: `Weighted` or `quantiles`
+) -> np.ndarray: # Number of samples for each area, in the order of `ranks`
+    "Split `budget` samples across areas according to their `ranks`."
     if policy == "Weighted":
         weights = 1/ranks
         normalized_weights = np.array(weights) / np.sum(weights)
