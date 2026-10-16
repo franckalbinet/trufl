@@ -5,12 +5,12 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "trufl"
 dynamic = ["version"]
-description = "Optimize adaptive sampling"
+description = "Plan multi-round spatial surveys: rank areas by sampling need with multiple-criteria decision-making (MCDM), then split each round's sampling budget across them."
 readme = "README.md"
 requires-python = ">=3.10"
 license = "Apache-2.0"
 authors = [{name = "Floris Abrams"}, {name = "Franck Albinet", email = "franckalbinet@gmail.com"}]
-keywords = ['nbdev', 'jupyter', 'notebook', 'python']
+keywords = ['adaptive-sampling', 'spatial-sampling', 'mcdm', 'topsis', 'survey-design', 'geospatial']
 classifiers = ["Natural Language :: English", "Intended Audience :: Developers", "Development Status :: 3 - Alpha", "Programming Language :: Python :: 3", "Programming Language :: Python :: 3 :: Only"]
 dependencies = ['fastcore', 'geopandas', 'rasterio', 'pysal==24.1']
 
