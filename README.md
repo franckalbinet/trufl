@@ -7,6 +7,18 @@ Trufl helps you decide where to sample next in a survey that runs over several r
 
 Trufl was built to plan soil surveys of farmland contaminated after a nuclear accident. The same approach works for any phenomenon you monitor over time against several criteria, such as legacy contaminants.
 
+trufl is part of the ecosystem of DSS4NAFA, a decision support system for nuclear emergencies affecting food and agriculture. [Where trufl comes from](https://franckalbinet.github.io/trufl/explanation/background.html) describes the research behind trufl and how it works with DSS4NAFA.
+
+## Why trufl
+
+Sampling theory and the research literature already cover multi-stage and adaptive spatial sampling well. Their methods rest on assumptions, such as a planned probability sampling design or a known model of spatial variation. In a nuclear emergency, the data rarely meet those assumptions. Measurements arrive over time from many sources, such as airborne surveys, laboratory analyses and samples taken where it was convenient to take them. They cover different locations at different resolutions. Sound statistical inference from such data is difficult. Decisions still have to be made, and you can’t ignore the data you have. trufl takes a pragmatic approach and uses all of it.
+
+The reasons to sample one area before another also vary, and they change during an emergency. They include the levels measured so far, the uncertainty that remains, prior knowledge, land use and population. trufl ranks areas on criteria that you choose, with weights that you set. You can change both from one round to the next.
+
+Like DSS4NAFA, trufl is not a black box. Each rank follows from the state of the area, the criteria, the weights and the scoring method. You can inspect each of them, and adjust them as the situation develops.
+
+You can also use trufl to prepare for an emergency. Simulate a campaign over several rounds on a map of a possible contamination, and compare sampling strategies before you need them.
+
 ## Install
 
 `pip install trufl`
@@ -131,11 +143,12 @@ In the next round, you compute the state from the values measured at these locat
 
 - [Getting started](https://franckalbinet.github.io/trufl/tutorials/getting_started.html) runs two sampling rounds on the simulated map, with plots.
 - [Run a campaign over several years](https://franckalbinet.github.io/trufl/how-to/multi_year_campaign.html) re-ranks and resamples the areas every year with a fixed budget.
+- [Where trufl comes from](https://franckalbinet.github.io/trufl/explanation/background.html) describes the research behind trufl and its place in the DSS4NAFA ecosystem.
 - [How trufl ranks areas](https://franckalbinet.github.io/trufl/explanation/ranking.html) explains the criteria, weights and scoring methods.
 - The [API reference](https://franckalbinet.github.io/trufl/reader.html) documents each module.
 
 ## Acknowledgements
 
-Trufl was developed within the [IAEA (International Atomic Energy Agency)](https://www.iaea.org) Coordinated Research Project (CRP) [“Monitoring and Predicting Radionuclide Uptake and Dynamics for Optimizing Remediation of Radioactive Contamination in Agriculture”](https://www.iaea.org/newscenter/news/new-crp-monitoring-and-predicting-radionuclide-uptake-and-dynamics-for-optimizing-remediation-of-radioactive-contamination-in-agriculture-crp-d15019).
+trufl started within the IAEA Coordinated Research Project D15019, [“Monitoring and Predicting Radionuclide Uptake and Dynamics for Optimizing Remediation of Radioactive Contamination in Agriculture”](https://www.iaea.org/newscenter/news/new-crp-monitoring-and-predicting-radionuclide-uptake-and-dynamics-for-optimizing-remediation-of-radioactive-contamination-in-agriculture-crp-d15019), led by the [Joint FAO/IAEA Centre of Nuclear Techniques in Food and Agriculture](https://www.fao.org/agriculture/fao-iaea-nuclear-techniques/en). It is actively maintained.
 
-It builds on the PhD research of Floris Abrams at [SCK CEN](https://www.sckcen.be) and [KU Leuven](https://www.kuleuven.be). Floris Abrams and Franck Albinet wrote the package.
+It builds on the PhD research of Floris Abrams at [SCK CEN](https://www.sckcen.be) and [KU Leuven](https://www.kuleuven.be). Floris Abrams and Franck Albinet wrote the package. [Where trufl comes from](https://franckalbinet.github.io/trufl/explanation/background.html) describes the research and how trufl works with DSS4NAFA.
