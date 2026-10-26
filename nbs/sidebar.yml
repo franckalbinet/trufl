@@ -3,6 +3,15 @@ website:
     contents:
       - text: Overview
         href: index.ipynb
+      - section: Tutorials
+        contents:
+          - auto: "tutorials/*.ipynb"
+      - section: How-to guides
+        contents:
+          - auto: "how-to/*.ipynb"
+      - section: Explanation
+        contents:
+          - auto: "explanation/*.ipynb"
       - section: API reference
         contents:
           - 00_reader.ipynb
