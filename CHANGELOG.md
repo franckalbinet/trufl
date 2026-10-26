@@ -2,6 +2,14 @@
 
 <!-- do not remove -->
 
+## 0.2.1
+
+### New Features
+
+- Explain where trufl comes from and how it fits in the DSS4NAFA ecosystem ([#15](https://github.com/franckalbinet/trufl/issues/15))
+- Split index.ipynb into tutorial, how-to, explanation and reference pages ([#9](https://github.com/franckalbinet/trufl/issues/9))
+
+
 ## 0.2.0
 
 ### Breaking Changes
