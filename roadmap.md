@@ -1,6 +1,14 @@
 # Roadmap
 
-Open questions about where trufl goes next. A question becomes an issue once it is settled enough to be done in one commit.
+Small next steps, then open questions about where trufl goes next. The questions don't all need answers now: a question becomes an issue once it is settled enough to be done in one commit.
+
+## Next steps
+
+Each step fits in one commit.
+
+- Per-unit table for one campaign: for each decision unit, the true mean and maximum from the raster, the measured mean and maximum, the number of samples and the Wasserstein distance. Units with no samples show as empty rows. No weighting, reference allocations or masks yet. Try it on the multi-year how-to before deciding what a score should be (#12).
+- Prior from a degraded copy of the ground truth, so simulated campaigns stop using a perfect prior (#11).
+- Fix `anonymize_raster`, which raises `NameError` on every call because its body uses `src_fname` and `dst_fname`, which are not parameters (#10).
 
 ## The campaign as a sequence of steps
 
@@ -12,6 +20,7 @@ Open questions about where trufl goes next. A question becomes an issue once it 
 - Decisions are made per administrative unit, such as a municipality. Where within such a unit should samples go?
 - Is a grid finer than the administrative units a useful way to stratify samples within them?
 - How should masks restrict placement, for example to one land use, or away from areas too contaminated to send people into?
+- Which restrictions are hard constraints that remove options, such as keeping people out of a zone, and which are soft costs that the ranking can trade off, such as travel time? Should hard constraints act before ranking: on allocation when they exclude a whole unit, and on placement when they exclude part of one?
 - Which placement methods besides uniform random sampling are worth having?
 
 ## Criteria
