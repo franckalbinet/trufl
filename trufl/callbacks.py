@@ -200,8 +200,8 @@ class PriorCB(Callback):
         loc_id:int, # Area to describe
         o:Type[State], # `State` holding the measurements
     ):
-        polygon = o.smp_areas.loc[o.smp_areas.reset_index().loc_id == loc_id].geometry
+        polygon = o.smp_areas.loc[[loc_id]].geometry
         with rasterio.open(self.fname_raster) as src:
-            out_image, out_transform = mask(src, polygon, crop=True)
-            mean_value = np.mean(out_image)
+            out_image, _ = mask(src, polygon, crop=True, filled=False)
+        mean_value = out_image.mean()
         return Variable(self.name, mean_value)
