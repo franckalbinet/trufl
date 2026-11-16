@@ -24,8 +24,7 @@ from scipy.spatial import KDTree
 import geopandas as gpd
 from typing import List
 from collections.abc import Callable
-import rasterio
-from rasterio.mask import mask
+from .utils import zonal_values
 import pandas as pd
 from typing import Type
 
@@ -200,8 +199,4 @@ class PriorCB(Callback):
         loc_id:int, # Area to describe
         o:Type[State], # `State` holding the measurements
     ):
-        polygon = o.smp_areas.loc[[loc_id]].geometry
-        with rasterio.open(self.fname_raster) as src:
-            out_image, _ = mask(src, polygon, crop=True, filled=False)
-        mean_value = out_image.mean()
-        return Variable(self.name, mean_value)
+        return Variable(self.name, zonal_values(self.fname_raster, o.smp_areas.geometry.loc[loc_id]).mean())

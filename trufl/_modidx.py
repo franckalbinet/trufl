@@ -79,4 +79,5 @@ d = { 'settings': { 'branch': 'main',
                                'trufl.sampler.rank_to_sample': ('sampler.html#rank_to_sample', 'trufl/sampler.py')},
             'trufl.utils': { 'trufl.utils.anonymize_raster': ('utils.html#anonymize_raster', 'trufl/utils.py'),
                              'trufl.utils.gridder': ('utils.html#gridder', 'trufl/utils.py'),
-                             'trufl.utils.reproject_raster': ('utils.html#reproject_raster', 'trufl/utils.py')}}}
+                             'trufl.utils.reproject_raster': ('utils.html#reproject_raster', 'trufl/utils.py'),
+                             'trufl.utils.zonal_values': ('utils.html#zonal_values', 'trufl/utils.py')}}}
