@@ -100,11 +100,12 @@ def zonal_values(
     fname_raster:str, # Path to the raster file
     geometry, # Shapely geometry of the unit, in the raster's CRS
     band:int=1, # Band to read
-) -> np.ndarray: # Values of the cells whose centre lies inside `geometry`
+) -> np.ndarray: # Values of the cells whose centre lies inside `geometry`, without nodata or NaN cells
     "Values of the cells of `fname_raster` inside `geometry`, as a flat array."
     with rasterio.open(fname_raster) as src:
         out_image, _ = mask(src, [geometry], indexes=band, crop=True, filled=False)
-    return out_image.compressed()
+    v = out_image.compressed()
+    return v[np.isfinite(v)]
 
 # %% ../nbs/03_utils.ipynb #ffd4495e
 def anonymize_raster(
