@@ -6,7 +6,7 @@ Working plan for scoring sampling campaigns against a ground truth and comparing
 
 - `trufl.utils.zonal_values` returns the raster cells inside one unit as a flat array, without nodata or NaN cells. `PriorCB` uses it.
 - `nbs/07_scoring.ipynb` holds `unit_stats`, a per-unit table with the true and measured mean and maximum, the sample count and the Wasserstein distance between the true cell values and the sample values. Units without samples have a count of 0 and `NaN` for the rest. It is not exported yet.
-- The notebook runs the multi-year how-to's campaign with fixed seeds (150 samples a round, 4 rounds) and keeps the table after each round.
+- The notebook runs campaigns with `Campaign` and `run` (see Campaigns). A six-round run takes about 1.2 seconds, and the same seed gives the same tables.
 
 ## First results
 
@@ -28,7 +28,7 @@ On the how-to campaign over `ground-truth-01`, averaged over units:
 
 - Use "round" for one sampling step, not "year": a round can be a day, a week or a year during an emergency or remediation.
 - A campaign takes any number of rounds and a budget for each round, as a list. This covers the roadmap's question of spending early or spreading the budget.
-- Write the campaign runner as an environment, `reset(ground_truth, seed)` and `step(decision) -> table`. Baselines, comparisons and a later reinforcement learning agent then use one interface.
+- The campaign runner is an environment. `Campaign(fname_raster, gdf_units)` holds the ground truth; `reset(seed)` starts with no samples; `step(n)` draws and measures `n` samples per unit and returns `unit_stats` for all samples so far. A strategy is a function `(samples, gdf_units, budget) -> n`. `run(campaign, strategy, budgets, seed)` plays a strategy and returns the per-unit tables of every round, indexed by `round` and `loc_id`. Baselines, comparisons and a later reinforcement learning agent use the same interface.
 
 ## Strategies
 
@@ -59,7 +59,7 @@ A strategy is the set of decisions made at each round: criteria, weights, benefi
 
 ## Proposed order
 
-1. A campaign runner over rounds, with the environment interface.
+1. A campaign runner over rounds, with the environment interface. Done.
 2. The baseline strategies.
 3. A headline score, with the per-unit table kept as diagnostics.
 4. A ground-truth generator, and a few contrasting ground truths.
@@ -70,7 +70,8 @@ A strategy is the set of decisions made at each round: criteria, weights, benefi
 
 - Add `scipy` to the dependencies in `pyproject.toml` with the scoring code. `callbacks` already imports it directly, but it arrives only through `pysal`.
 - `zonal_values` counts a cell whose centre lies exactly on a unit border in both units. Only `gridder` grids whose units are not a whole number of cells wide have such borders: on `ground-truth-02`, 1,376 of 705,200 cells are counted twice. Rounding `gridder` units to whole cells would remove the double count.
-- `Sampler.sample` passes `rng` on through `**kwargs`, and its docs do not mention it.
+- `esda.Moran`, which `MoranICB` uses, takes no seed: its permutation test uses NumPy's global random state. `Campaign.reset` seeds it with `np.random.seed`. A `seed` or `rng` argument on `MoranICB` would remove that global side effect.
+- In the how-to strategy, Moran's I is NaN for every unit when ranking rounds 2 and 3: units have at most 3 or 4 samples, and `MoranICB` needs more than `min_n=5`. Its 20% weight then sits on an empty criterion, and `mcdm.py` warns "All-NaN slice encountered". How the normalisation and ranking treat that column is not checked yet.
 
 ## Open questions
 
