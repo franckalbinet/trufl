@@ -178,7 +178,48 @@ Done: the campaign runner over rounds, the baseline strategies and the compariso
    Standard errors of the means range from 0.1 to 0.6. The step 2 answer holds on real structure: `bayes` beats equal allocation in all six settings (clearly far to the south-west, within about two standard errors elsewhere) and the how-to strategy in five; near the plant at 30.2 the how-to strategy does better. The oracle is best everywhere, with the largest gaps near the plant and in the plume at 5.5, which leaves room for a better information layer. Neyman allocation is the worst or close to it. On real windows most units lie clearly on one side of a level: only the plume window has many units near the boundary (23 and 16).
 
    Finding: `LINEAR1` rejects any negative value in the state matrix (`check_normalization_input` raises `ValueError`). The how-to strategy failed on log10 dose rates, which are negative below 1 µSv/h, through `Max`, `Min` and `Prior`. The windows hold dose rates for that reason. A significant negative Moran's I would raise the same error; it did not occur in these runs. This adds to the `MoranICB` open question: `LINEAR1` restricts which criteria a strategy can use.
-4. Library changes decided from the evidence: exporting the scoring module, the callback fixes if information criteria stay, documenting the role of MCDM.
+4. A degraded prior (#11). Question: do strategies gain from a realistic prior?
+   Result. In `07_scoring.ipynb`: `degrade` writes a prior raster that resembles an airborne survey (block averages of the ground truth times lognormal noise with median 1 and a bias factor, on the ground truth's grid); `PriorCB` and `mcdm` take it as any raster, so no library change is needed. `bayes` takes an optional prior: a unit whose prior has a share `s0` of cells above the level starts from Beta(0.5 + m s0, 0.5 + m (1 - s0)), with `m` the number of samples the prior is worth. `true_values` is renamed `unit_values`, since it reads priors too. Measurement noise in `DataCollector`, the other half of #11, is not done.
+
+   Setup in `nbs/_scoring_experiments.ipynb`: `gt-02` at 0.473, the plume window at 4.9 and the near-plant window at 14.8 µSv/h; priors `perfect` (the ground truth), `survey` (blocks of 10 cells, 30% noise) and `poor` (60% noise, 30% too low); 20 seeds. Wrong decisions after round 6:
+
+   | Truth | Prior | equal | bayes | bayes, prior 4 | bayes, prior 20 | oracle |
+   |---|---|---|---|---|---|---|
+   | gt-02 at 0.473 | perfect | 10.0 | 7.8 | 9.6 | 12.4 | 6.5 |
+   | gt-02 at 0.473 | survey | 10.0 | 7.8 | 15.2 | 20.6 | 6.5 |
+   | gt-02 at 0.473 | poor | 10.0 | 7.8 | 9.0 | 17.0 | 6.5 |
+   | nw plume at 4.9 | perfect | 7.4 | 6.2 | 11.0 | 16.8 | 5.6 |
+   | nw plume at 4.9 | survey | 7.4 | 6.2 | 8.9 | 16.3 | 5.6 |
+   | nw plume at 4.9 | poor | 7.4 | 6.2 | 6.0 | 9.5 | 5.6 |
+   | near plant at 14.8 | perfect | 1.8 | 1.2 | 3.2 | 3.6 | 0.2 |
+   | near plant at 14.8 | survey | 1.8 | 1.2 | 3.0 | 4.8 | 0.2 |
+   | near plant at 14.8 | poor | 1.8 | 1.2 | 3.6 | 3.7 | 0.2 |
+
+   A prior makes `bayes` worse, even the perfect one, and more so the stronger it is. Diagnosis: `bayes` trusts the prior when it allocates, but the dashboard's rule ignores the prior when it decides. A unit that the prior marks as clearly above or below the level gets only its one compulsory sample, and that sample alone decides. With seed 0 on `gt-02`, the perfect prior worth 20 samples leaves 34 units with one sample, and 8 of its 14 wrong decisions are on them, with true shares up to 0.31. `bayes` without a prior works because a unit with few samples has a wide posterior, which keeps it sampled. The probability that matters is that the dashboard's rule, applied to the samples, gets the unit wrong: the oracle's computation, averaged over the posterior on the share instead of using the true share. Two remedies: an allocation rule that predicts the decision the dashboard will actually make (this also handles the sawtooth, and is close to the value-of-information rule), or a decision rule that uses the prior as well as the samples, which is a question for DSS4NAFA.
+
+   The how-to strategy is left out of this comparison: with the `survey` prior on `gt-02`, seed 3, a unit gets a significant negative Moran's I (-0.14) in round 5, and `LINEAR1` rejects the state. The `MoranICB` and `LINEAR1` problem is no longer only theoretical.
+5. Predicting the dashboard's decision (value of information). Question: does allocating by the probability that the dashboard's own rule gets a unit wrong fix the prior problem of step 4, and close the gap to the oracle?
+   Result. In `07_scoring.ipynb`: `expected_wrong(k, n, m, a0, b0, accepted)` gives the expected probability that the dashboard's rule is wrong for a unit after `m` more samples, averaging the binomial outcome over a beta posterior on the share. It sees the sawtooth: for a unit with 1 of 9 samples above the level, one more sample raises it from 0.39 to 0.50, and three more bring it below where it started. `voi` tops each unit up to `min_total` samples over the campaign, then gives each sample to the unit with the largest average drop of `expected_wrong` per sample over the next 1 to `horizon` (5) samples; with no gain left anywhere, the rest goes in proportion to the current probability of a wrong decision. A first version looked one sample ahead only, and gave samples to a unit whose decision could not change (3 of 10 samples above the level got 19 of 150).
+
+   Setup as in step 4, 20 seeds. Wrong decisions after round 6 (the `none` row is the same for every prior):
+
+   | Truth | Prior | equal | bayes | voi | voi, prior 4 | voi, prior 20 | oracle |
+   |---|---|---|---|---|---|---|---|
+   | gt-02 at 0.473 | none | 10.0 | 7.8 | 9.1 | | | 6.5 |
+   | gt-02 at 0.473 | perfect | | | | 5.7 | 4.0 | |
+   | gt-02 at 0.473 | survey | | | | 9.2 | 9.7 | |
+   | gt-02 at 0.473 | poor | | | | 8.6 | 8.8 | |
+   | nw plume at 4.9 | none | 7.4 | 6.2 | 6.3 | | | 5.6 |
+   | nw plume at 4.9 | perfect | | | | 5.5 | 4.0 | |
+   | nw plume at 4.9 | survey | | | | 6.8 | 10.0 | |
+   | nw plume at 4.9 | poor | | | | 6.6 | 12.7 | |
+   | near plant at 14.8 | none | 1.8 | 1.2 | 1.4 | | | 0.2 |
+   | near plant at 14.8 | perfect | | | | 0.8 | 0.0 | |
+   | near plant at 14.8 | survey | | | | 0.8 | 0.7 | |
+   | near plant at 14.8 | poor | | | | 1.4 | 1.7 | |
+
+   Standard errors range from 0.05 to 0.6. Predicting the dashboard's decision fixes the prior problem: a prior no longer leaves clearly contaminated units with one sample. With a perfect prior, `voi` makes the fewest wrong decisions of any strategy, fewer than the decision oracle. The decision oracle allocates in proportion to the true probability of a wrong decision, a rule of thumb rather than the best allocation, so it is a reference, not an upper bound; earlier readings of it as the room left for improvement overstate that room. With realistic priors, the gain depends on the prior's weight: worth 4 samples, the `survey` and `poor` priors give results close to `bayes` without a prior and better than equal allocation; worth 20 samples, a poor prior hurts badly in the plume (12.7 against 7.4 for equal allocation). The prior's weight should follow its quality, which the decision makers or the survey's known accuracy would have to set. Without a prior, `voi` is no better than `bayes` (9.1 against 7.8 on `gt-02`); the reason is not checked.
+6. Library changes decided from the evidence: exporting the scoring module, the callback fixes if information criteria stay, documenting the role of MCDM.
 
 Waiting until these steps show which matter: stakes per unit, the asymmetry between the two kinds of error, several foodstuffs and radionuclides, "Partially restrict", a ground-truth generator, plots, and reinforcement learning for the information layer.
 
