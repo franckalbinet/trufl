@@ -39,6 +39,43 @@ With a value layer, the gain of each unit is multiplied by its stake weight, so 
 
 `allocate` (proportional allocation after a minimum) is a shared helper. `bayes`, `equal` and `neyman` are baselines, and stay in the simulation module.
 
+## Placement within a unit
+
+Where samples go inside a unit matters as much as how many each unit gets, once the field is spatially correlated. Proposed: placement as a part next to the information layer. Nothing here is decided.
+
+The binomial model in `bayes` and `voi` assumes samples placed uniformly at random within the unit. Then each sample is above the level with probability equal to the share of the unit's area above it, whatever the spatial pattern, so the model is exact. It does not assume an uncorrelated field.
+
+Evidence, from "Placement within a unit" in `nbs/_scoring_experiments.ipynb`: synthetic Gaussian random fields on one unit, 1,000 fields per setting, correlation set by a smoothing width `sigma` (16 cells is 1/8 of the unit width):
+
+- Random placement gives the binomial error whatever the correlation.
+- At `sigma` 16, a systematic grid of 16 samples estimates the share about as well as 49 random samples; 36 as well as about 150; 64 as well as about 400.
+- At `sigma` 16 and a true share of 12%, 64 random samples give a wrong decision 38% of the time, and 64 systematic samples 12%.
+- Clustered placement (4 clusters, as when teams sample near roads or one farm) is wrong 56 to 58% of the time at 12%, and more samples don't help. Most clusters miss the patch, so the errors are missed restrictions.
+- With no correlation, all placements are the same.
+
+What it would change:
+
+- Recommend a systematic or stratified layout within each unit. It costs no extra samples. Without correlation it matched random placement within simulation noise, and with correlation it did better.
+- In `voi`, replace each unit's sample count by an effective count that depends on the placement and on the correlation range relative to the unit size. Without it, `voi` overspends on spread units and is overconfident on clustered ones.
+- Estimate the correlation range from a variogram or the scale of the prior raster. Moran's I from a unit's samples shows whether correlation is present, but not its range.
+- With strong correlation, the exceedances form a patch, which makes "partially restrict" meaningful and opens adaptive placement near the first exceedances.
+
+### Directional fields and plumes
+
+After an accident, contamination follows the plume. That gives two effects. Within a unit, the correlation is anisotropic: a long range along the plume and a short one across it. Between units, there is a trend: values fall with distance from the source and away from the plume axis, so decisions are close only along the plume edge. The usual model is `log value = trend + correlated residual`, with the trend from a dispersion model or the airborne survey. Nothing here is decided.
+
+Evidence, from "Directional fields" and "A synthetic plume" in `nbs/_scoring_experiments.ipynb` (synthetic fields only):
+
+- Within a unit (36 samples, 2,000 fields per setting), strata stretched along the plume, by rotating the coordinates to the plume axis and dividing by the range in each direction, are worth about 10 more samples than square strata when the anisotropy is strong (ranges 2 by 32 cells), and 1 to 7 more when it is mild (4 by 16). Stretched along the wrong axis, they lose most of the gain from stratifying. Square strata are the safe choice when the direction is uncertain.
+- Between units (a synthetic Gaussian plume over 10 by 10 units, 40 seeds, wrong decisions after round 6): `voi` with a survey or perfect prior 3.2 to 4.5, with a dispersion-model prior at strength 4 5.0, with no prior 5.8, equal allocation 6.2. With the wind 10° off, the dispersion prior at strength 4 gives no gain (5.7). At strength 20, both dispersion priors are worse than equal allocation (9.1 and 8.0), because the trend lacks the residual patches.
+
+What it would change:
+
+- Placement: stratify on coordinates stretched along the plume when the direction is well known, and use square strata otherwise. The direction comes from the wind record, the dispersion model or the survey; directional variograms pooled over units, or computed on the prior raster, can check it.
+- Priors: a dispersion model can serve as `voi`'s prior before a survey exists, with a small weight (about 4 samples). A survey, once available, is the better prior.
+- Decisions: a unit cut by the plume edge is the clearest case for "partially restrict", and the trend gives the line along which to split it.
+- Publication: the synthetic plume is a candidate ground truth that resembles a real accident without using Fukushima data.
+
 ## Value layer
 
 `Optimizer`, `State` and the callbacks keep their role of ranking units, on value criteria. The proposed change is in what they are used for: they give `voi` a weight per unit instead of deciding the allocation themselves through `rank_to_sample`.
@@ -47,6 +84,42 @@ Two open points:
 
 - How a rank becomes a weight. A rank loses the size of the differences between units; the `CP` or `TOPSIS` score keeps it. Proposed: use the score, rescaled to [0, 1].
 - Whether the information criteria (`StdCB`, `CountCB`, `MoranICB`) stay in the recommended path. With `voi` handling information, they are not needed for allocation. They stay in the library for existing users.
+
+## Dilemmas
+
+A nuclear response weighs one harm against another. Economic value against health risk is one example. This section lists the dilemmas found so far, and what each one would change in trufl. Nothing here is decided.
+
+### Two costs per unit
+
+Today `voi` counts every wrong decision as 1, and the value layer proposes one stake weight per unit. A needless restriction and a missed restriction have different stakes. The cost of a needless restriction grows with what the restriction destroys, such as the economic value of a crop. The cost of a missed restriction grows with the risk to consumers. Proposed: two weights per unit, from the value layer, and `voi` lowers the expected cost:
+
+    expected cost = c_needless * P(needless restriction) + c_missed * P(missed restriction)
+
+Example: a field with a crop of high economic value, with 2 of 20 samples above the level, which is exactly the 10% accepted. The decision is close, so `voi` already gives the field priority. A high `c_needless` raises it further, and sends extra samples to settle whether the true share is below 10%.
+
+The costs set where to sample, not what to decide. The decision stays with the decision rule. Raising the accepted share for valuable crops would trade health protection for money, which is a policy choice for the authorities.
+
+### Dilemmas that fit the two-cost model
+
+- Food security against contamination. Where a staple feeds subsistence farmers, a restriction can cause more harm to health, through hunger and poor diet, than the dose it prevents. This raises `c_needless` for staples in poor areas.
+- Livelihoods and communities against precaution. At Fukushima, the harm from relocation and loss of farming was large compared with the dose avoided. This cost belongs in `c_needless`, beyond the market price of the crop.
+- Self-consumption against market produce. Market produce passes later checks; food a household grows and eats itself does not. A missed restriction on home gardens has no second barrier, so `c_missed` is higher there.
+- Stigma against evidence ("fuhyo higai", harm from rumours). Buyers avoided Fukushima produce even below the limits. A needless restriction damages a region's reputation for years after it is lifted, which raises `c_needless`.
+
+### Dilemmas that need new parts in trufl
+
+- Speed against certainty. Leafy vegetables and milk can't wait for more rounds; stored grain can. trufl runs rounds with no clock. This needs a deadline, or a cost of delay, per unit.
+- Sampler dose against information. Sampling near the plant exposes the teams, so a sample there costs more in dose as well as money. This needs a cost per sample that varies by unit, so the budget is no longer a count of samples.
+- Coverage and equity against efficiency. `voi` sends samples where decisions are close, so settled or small units get few. Communities that see no sampling lose trust, and smallholders may get less protection than valuable estates. A minimum number of samples per unit is partly a fairness and trust constraint, not only a statistical one.
+- Restriction against countermeasures. Potassium fertiliser, deep ploughing, clean feed for livestock and a change of crop are options as well as restriction. With more than two actions, the decision rule chooses among options instead of comparing with a threshold.
+- Which commodity to sample. Transfer from soil to crop differs a lot between crops, so one field can be safe for grain and unsafe for mushrooms. The unit becomes a pair of field and crop.
+
+Proposed priority: speed (deadlines) and sampler dose (variable sample cost) first, since both occur in every response and both change where samples go. Equity and decisions with several actions are larger design changes, for after the core is stable.
+
+### Dilemmas for the policy, not for trufl
+
+- Strict against lenient levels. Japan's limit for general food is 100 Bq/kg; the Codex guideline level is 1000 Bq/kg. A strict level builds trust and helps trade, but leads to more restrictions. The authorities set the level, and trufl takes it as input.
+- Fine against coarse restriction units. Restricting a whole municipality is simple but restricts clean land. Partial restrictions need more samples. trufl could show what each unit size costs in samples, but the choice stays with the authorities.
 
 ## Simulation module
 
@@ -71,9 +144,9 @@ Each of these needs your decision:
 ## Out of scope for the first version
 
 - Stakes data and their elicitation. The value layer starts with weight 1 for every unit.
-- The asymmetry between a missed and a needless restriction.
+- The asymmetry between a missed and a needless restriction (see "Two costs per unit"), and the other dilemmas.
 - Several foodstuffs and radionuclides sharing one budget.
-- "Partially restrict", and placement within a unit (uniform random for now).
+- "Partially restrict". Placement within a unit stays uniform random in the first version (see "Placement within a unit").
 - How to set the weight of a prior from its quality.
 - Reinforcement learning for the information layer.
 
