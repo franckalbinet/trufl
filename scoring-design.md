@@ -170,6 +170,16 @@ Proposed module `trufl.simulation`, exported from `nbs/07_scoring.ipynb`:
 
 Its main use is comparing strategies before an emergency, on simulated ground truths. Measurement noise in `DataCollector` (#11) belongs here too.
 
+### Reinforcement learning as a benchmark
+
+`voi` is greedy: each round, it gives samples where they help most now, looks at most `horizon` samples ahead per unit, and treats units as independent. A policy trained by reinforcement learning could plan the whole campaign. It could save budget for later rounds, stop sampling a unit that later rounds will settle more cheaply, and use links between units, such as neighbours in a plume. It could also handle effects that have no closed form: spatial correlation, adaptive placement within a unit, measurement noise, deadlines and sampler dose.
+
+`Campaign` already has the interface of an environment (`reset`, `step`). The reward would be minus the cost of the wrong decisions at the end of the campaign, with the health bound as a constraint (constrained reinforcement learning).
+
+The costs: training needs many simulated campaigns, so the policy is only as good as the synthetic ground truths are realistic. A learned policy is much harder to explain to decision makers than `voi`. A hard health bound is harder to guarantee than with `voi`'s explicit first pass.
+
+Proposed: use reinforcement learning as a benchmark, not as the method. It would show how far any strategy can improve on `voi`, and in which situations. Where the gap is large, the insight goes into `voi` in an explainable form, such as an effective sample count or a rule for saving budget across rounds. Nothing here is decided.
+
 ## Changes to published behaviour
 
 Each of these needs your decision:
@@ -187,7 +197,7 @@ Each of these needs your decision:
 - Several foodstuffs and radionuclides sharing one budget.
 - "Partially restrict". Placement within a unit stays uniform random in the first version (see "Placement within a unit").
 - How to set the weight of a prior from its quality.
-- Reinforcement learning for the information layer.
+- Reinforcement learning, except as a benchmark (see "Reinforcement learning as a benchmark").
 
 ## Questions for DSS4NAFA
 
