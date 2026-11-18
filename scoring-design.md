@@ -79,7 +79,7 @@ What it would change:
 
 ## Value layer
 
-`Optimizer`, `State` and the callbacks keep their role of ranking units, on value criteria. The proposed change is in what they are used for: they give `voi` a weight per unit instead of deciding the allocation themselves through `rank_to_sample`.
+`Optimizer`, `State` and the callbacks keep their role of ranking units, on value criteria. The proposed change is in what they are used for: they give `voi` weights per unit instead of deciding the allocation themselves through `rank_to_sample`. With two costs per unit, they give two weights, one for each kind of wrong decision (see "Costs from MCDM" under "Dilemmas").
 
 Two open points:
 
@@ -100,6 +100,33 @@ Example: a field with a crop of high economic value, with 2 of 20 samples above 
 
 The costs set where to sample, not what to decide. The decision stays with the decision rule. Raising the accepted share for valuable crops would trade health protection for money, which is a policy choice for the authorities.
 
+### Costs from MCDM
+
+MCDM turns the criteria of each unit into its two costs. The trade-off between the two kinds of error stays outside MCDM, as one setting for decision makers. Nothing here is decided.
+
+Each cost has its own criteria:
+
+- `c_needless` (restricting a unit that did not need it): economic value of the crop, dependence of local food security on it, number of farms and jobs, market reputation of the region.
+- `c_missed` (releasing a unit that should have been restricted): population eating the produce, share eaten by the households that grow it, consumption rates, children, transfer of contamination from soil to crop.
+
+Two MCDM runs give each unit a score between 0 and 1 for each cost. The existing machinery does this without change: callbacks compute the criteria per unit, `Optimizer` normalises and weights them, and the `CP` or `TOPSIS` score is the result. Most of these criteria are rasters (population, crop value, land use). `PriorCB` reads the mean of any raster over a unit, these included.
+
+Normalised scores are relative to the other units. A score of 0.8 for economic value cannot be compared with a score of 0.8 for health risk. The ratio between the two costs is a policy choice, made explicit as one setting `r`:
+
+    expected cost = c_needless * P(needless restriction) + r * c_missed * P(missed restriction)
+
+MCDM sets the stakes among units for each kind of error. `r` sets the trade-off between the two kinds of error. Decision makers see and set `r` directly, next to the permissible level and the accepted proportion, instead of leaving it implicit in criteria weights.
+
+MCDM also gives:
+
+- A record of why each unit gets its samples: its decision is close (information layer) and its stakes are high (value layer).
+- Sensitivity analysis: vary the criteria weights and `r`, then compare allocations and expected wrong decisions. Units sampled under every reasonable weighting are safe choices. Units whose samples depend on the weights show where decision makers must agree.
+
+Gaps in the current MCDM layer:
+
+- `LINEAR1` gives the lowest unit a score of 0. Its cost would be 0 and `voi` would never sample it, however close its decision. Costs need a floor, such as `c = c_min + score`, or a normalisation that never gives 0.
+- Scores depend on the set of units. Adding or removing a unit changes every cost. Normalising against fixed reference values, such as the economic value of a typical field, keeps costs stable across campaigns.
+- Sampler dose and deadlines are not stakes. They belong to the budget and the timing (see "Dilemmas that need new parts in trufl"), not to MCDM.
 ### Dilemmas that fit the two-cost model
 
 - Food security against contamination. Where a staple feeds subsistence farmers, a restriction can cause more harm to health, through hunger and poor diet, than the dose it prevents. This raises `c_needless` for staples in poor areas.
@@ -155,6 +182,7 @@ Each of these needs your decision:
 
 - The sawtooth: with the current rule, one more sample can make a decision less reliable. With 10% accepted, a unit whose true share is 12% is decided wrongly 32% of the time with 9 samples and 66% with 10.
 - Should restriction decisions use prior information, such as the airborne survey, as well as samples?
+- Would decision makers accept setting the ratio `r` between the cost of a missed and of a needless restriction openly, as a dashboard setting next to the permissible level and the accepted proportion? See "Costs from MCDM".
 
 ## Proposed order
 
