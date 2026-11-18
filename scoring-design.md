@@ -27,6 +27,21 @@ A decision rule takes a unit's sample values and returns an action: `restrict`, 
 
 The information layer needs more than the action. To predict a future decision, it needs the number of exceedances the rule requires for each number of samples. Proposed: a small class per rule, for example `ShareRule(level, accepted, min_n)`, with `decide(values)` and `needed(n)`. `expected_wrong` then works for any rule that decides on a count of exceedances. A rule on the measured values themselves (see the sawtooth in `nbs/_explain_04_sawtooth.ipynb`) would need a different `expected_wrong`.
 
+### Is the share rule the right criterion?
+
+The experiments point at the DSS4NAFA rule itself, not only at the sampling:
+
+- The sawtooth: because the rule counts exceedances, one more sample can make a decision less reliable, and stopping at 9 samples beats taking a 10th.
+- The rule ignores how far values are above or below the level. A sample at 1.1 times the level counts the same as one at 10 times. A rule on the measured values has no sawtooth (`nbs/_explain_04_sawtooth.ipynb`).
+- The rule ignores prior information such as the airborne survey, which is why a prior made `bayes` worse.
+- Part of the perverse incentive of costs ("Health as a limit") comes from the rule. Any rule changes a decision only by flipping it, but under a rule that converges, the chance of a wrong flip falls steadily with more samples. Under the share rule it jumps, which makes sampling look risky where a restriction is expensive.
+
+The rule also has strengths: it is transparent, needs no model of how contamination is distributed, and is easy to defend. A replacement would give up some of that.
+
+The share of a unit's area above the level is a proxy. What decision makers want to control is more likely the dose to consumers, which depends on concentrations and consumption, weighed against the harm of restricting. Candidate rules: restrict when the probability that the share exceeds the accepted proportion is above a confidence level, which makes precaution an explicit setting; or decide on an upper bound of the mean concentration.
+
+trufl takes the rule as an input, so it can compare rules without choosing one. The scoring defines the true action through the share above the level, the same criterion as the current rule. A fair comparison of rules needs a truth that no rule defines, such as each unit's true dose or true share, scored on the synthetic plumes. That would give DSS4NAFA evidence for the choice. Nothing here is decided.
+
 ## Information layer
 
 A strategy is a function `(samples, gdf_units, budget, rng) -> n`, giving the number of samples for each unit in `gdf_units` order. The proposed public strategy is `voi(rule, min_total, prior, strength, horizon)`:
@@ -203,6 +218,7 @@ Each of these needs your decision:
 
 - The sawtooth: with the current rule, one more sample can make a decision less reliable. With 10% accepted, a unit whose true share is 12% is decided wrongly 32% of the time with 9 samples and 66% with 10.
 - Should restriction decisions use prior information, such as the airborne survey, as well as samples?
+- Is the share of samples above the permissible level the right criterion, or should decisions target what it stands for, such as dose to consumers? See "Is the share rule the right criterion?".
 - Would decision makers accept setting the ratio `r` between the cost of a missed and of a needless restriction openly, as a dashboard setting next to the permissible level and the accepted proportion? See "Costs from MCDM".
 - What bound on the probability of a missed restriction per unit would be acceptable, and should it be the same for every unit? See "Health as a limit".
 
