@@ -129,6 +129,15 @@ Gaps in the current MCDM layer:
 - `LINEAR1` gives the lowest unit a score of 0. Its cost would be 0 and `voi` would never sample it, however close its decision. Costs need a floor, such as `c = c_min + score`, or a normalisation that never gives 0.
 - Scores depend on the set of units. Adding or removing a unit changes every cost. Normalising against fixed reference values, such as the economic value of a typical field, keeps costs stable across campaigns.
 - Sampler dose and deadlines are not stakes. They belong to the budget and the timing (see "Dilemmas that need new parts in trufl"), not to MCDM.
+
+### Health as a limit
+
+The testbed ("Two costs per unit" in `nbs/_scoring_experiments.ipynb`) shows that costs used only to allocate samples weaken health protection where economic value is high. Under the dashboard's rule, more samples can only restrict a unit that is not restricted, and can only lift a restricted one. When a needless restriction is expensive, sampling a clean-looking unit raises its expected cost. `voi` then stops sampling it, and contamination there goes unfound. On ten synthetic plumes, with a needless restriction costing 5 in half the units, missed restrictions in that half rose from 0.3 to 1.8 per campaign for `voi` without a prior, and from 1.3 to 8.5 with the dispersion prior.
+
+Proposed: health is a limit, not a cost. `voi` first samples every unit whose probability of a missed restriction is above a bound, such as 5%, until it falls below it or more samples cannot lower it. The costs then decide where the remaining samples go. Economic value can then add samples to valuable units but cannot take them away from the health check. The bound is a policy setting, like the permissible level, for decision makers and DSS4NAFA to set. Nothing here is decided.
+
+First test ("Health as a limit" in the experiments notebook, same plumes and costs, `voi(max_missed=...)`): a bound of 5% brings missed restrictions in the valuable half down to 0.2 to 0.3, but takes the whole budget, so the costs no longer act. A bound of 20% with the dispersion prior gives 1.6 missed restrictions there (8.5 without a bound, 1.3 with equal costs) and fewer needless ones than with equal costs (0.30 against 0.53). Without a prior, a bound of 20% barely helps, because a clean unit needs about 8 samples to reach it. The bound sets the trade-off between health protection and room for economic costs.
+
 ### Dilemmas that fit the two-cost model
 
 - Food security against contamination. Where a staple feeds subsistence farmers, a restriction can cause more harm to health, through hunger and poor diet, than the dose it prevents. This raises `c_needless` for staples in poor areas.
@@ -185,6 +194,7 @@ Each of these needs your decision:
 - The sawtooth: with the current rule, one more sample can make a decision less reliable. With 10% accepted, a unit whose true share is 12% is decided wrongly 32% of the time with 9 samples and 66% with 10.
 - Should restriction decisions use prior information, such as the airborne survey, as well as samples?
 - Would decision makers accept setting the ratio `r` between the cost of a missed and of a needless restriction openly, as a dashboard setting next to the permissible level and the accepted proportion? See "Costs from MCDM".
+- What bound on the probability of a missed restriction per unit would be acceptable, and should it be the same for every unit? See "Health as a limit".
 
 ## Proposed order
 
