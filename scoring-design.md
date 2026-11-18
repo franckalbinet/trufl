@@ -64,14 +64,15 @@ What it would change:
 
 After an accident, contamination follows the plume. That gives two effects. Within a unit, the correlation is anisotropic: a long range along the plume and a short one across it. Between units, there is a trend: values fall with distance from the source and away from the plume axis, so decisions are close only along the plume edge. The usual model is `log value = trend + correlated residual`, with the trend from a dispersion model or the airborne survey. Nothing here is decided.
 
-Evidence, from "Directional fields" and "A synthetic plume" in `nbs/_scoring_experiments.ipynb` (synthetic fields only):
+Evidence, from "Directional fields", "A synthetic plume" and "Placement in the plume" in `nbs/_scoring_experiments.ipynb` (synthetic fields only):
 
 - Within a unit (36 samples, 2,000 fields per setting), strata stretched along the plume, by rotating the coordinates to the plume axis and dividing by the range in each direction, are worth about 10 more samples than square strata when the anisotropy is strong (ranges 2 by 32 cells), and 1 to 7 more when it is mild (4 by 16). Stretched along the wrong axis, they lose most of the gain from stratifying. Square strata are the safe choice when the direction is uncertain.
 - Between units (a synthetic Gaussian plume over 10 by 10 units, 40 seeds, wrong decisions after round 6): `voi` with a survey or perfect prior 3.2 to 4.5, with a dispersion-model prior at strength 4 5.0, with no prior 5.8, equal allocation 6.2. With the wind 10° off, the dispersion prior at strength 4 gives no gain (5.7). At strength 20, both dispersion priors are worse than equal allocation (9.1 and 8.0), because the trend lacks the residual patches.
+- Placement in the plume (`Campaign(placement=...)`, five strategies, 40 seeds): against uniform placement, `spread` along the plume lowers wrong decisions after round 6 by 0.78 ± 0.17 on average over the strategies, `spread` in every direction by 0.30 ± 0.16, and the wrong axis by 0.04 ± 0.16. `voi` with the dispersion prior and spread along the plume makes 4.3 wrong decisions, as few as `voi` with the survey prior and uniform placement (4.4).
 
 What it would change:
 
-- Placement: stratify on coordinates stretched along the plume when the direction is well known, and use square strata otherwise. The direction comes from the wind record, the dispersion model or the survey; directional variograms pooled over units, or computed on the prior raster, can check it.
+- Placement: spread samples on coordinates stretched along the plume when the direction is well known, and evenly otherwise. Across rounds this needs a placement that keeps away from a unit's earlier samples, such as `spread` in `nbs/07_scoring.ipynb` (best-candidate sampling), because strata built each round hold one or two samples. The direction comes from the wind record, the dispersion model or the survey. Directional variograms pooled over units, or computed on the prior raster, can check it.
 - Priors: a dispersion model can serve as `voi`'s prior before a survey exists, with a small weight (about 4 samples). A survey, once available, is the better prior.
 - Decisions: a unit cut by the plume edge is the clearest case for "partially restrict", and the trend gives the line along which to split it.
 - Publication: the synthetic plume is a candidate ground truth that resembles a real accident without using Fukushima data.
