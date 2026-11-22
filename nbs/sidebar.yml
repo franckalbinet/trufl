@@ -3,22 +3,37 @@ website:
     contents:
       - text: Overview
         href: index.ipynb
-      - section: Tutorials
+      - section: Tutorial
         contents:
-          - auto: "tutorials/*.ipynb"
+          - tutorials/01_getting_started.ipynb
       - section: How-to guides
         contents:
-          - auto: "how-to/*.ipynb"
+          - how-to/02_use_your_data.ipynb
+          - how-to/03_set_priorities.ipynb
+          - how-to/04_fit_budget.ipynb
+          - how-to/05_closed_zones.ipynb
+          - how-to/06_field_list.ipynb
+          - how-to/07_add_results.ipynb
+          - how-to/01_multi_year_campaign.ipynb
+      - section: Reference
+        contents:
+          - reference/01_methods.ipynb
+          - reference/02_formats.ipynb
+          - reference/03_errors.ipynb
+          - section: Modules
+            contents:
+              - 04_callbacks.ipynb
+              - 02_optimizer.ipynb
+              - 05_mcdm.ipynb
+              - 01_sampler.ipynb
+              - 06_collector.ipynb
+              - 00_reader.ipynb
+              - 03_utils.ipynb
       - section: Explanation
         contents:
-          - auto: "explanation/*.ipynb"
-      - section: API reference
-        contents:
-          - 00_reader.ipynb
-          - 01_sampler.ipynb
-          - 02_optimizer.ipynb
-          - 03_utils.ipynb
-          - 04_callbacks.ipynb
-          - 05_mcdm.ipynb
-          - 06_collector.ipynb
-          
+          - explanation/03_round.ipynb
+          - explanation/02_ranking.ipynb
+          - explanation/04_allocation.ipynb
+          - explanation/05_limits.ipynb
+          - explanation/01_background.ipynb
+          - explanation/06_documentation.ipynb

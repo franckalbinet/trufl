@@ -44,7 +44,7 @@ class Callback:
 class State:
     "State variables of each area, computed by callbacks from the measurements collected so far."
     def __init__(self,
-        measurements:gpd.GeoDataFrame, # Measurements so far: a `value` column and `Point` geometries, indexed by `loc_id`
+        measurements:gpd.GeoDataFrame, # Measurements so far: a `value` column and `Point` geometries, indexed by `loc_id`. Unknown ids are ignored
         smp_areas:gpd.GeoDataFrame, # Areas to describe, indexed by `loc_id`, such as the output of `gridder`
         cbs:List[Callable], # Callbacks that compute the state variables
     ):
@@ -163,7 +163,7 @@ class CountCB(Callback):
 
 # %% ../nbs/04_callbacks.ipynb #d524ee41
 class MoranICB(Callback):
-    "Moran's I of the area's measurements and their nearest neighbours. `NaN` if the area has too few measurements or Moran's I is not significant."
+    "Moran's I of the area's measurements and their neighbours. Unreliable: repeated points make random data look significant. `NaN` if too few points or not significant."
     def __init__(self,
         k=5, # Number of neighbours per point, used to expand the measurements and to build the spatial weights
         p_threshold=0.05, # Significance level: Moran's I is `NaN` when its pseudo p-value `p_sim` is at or above it
@@ -189,9 +189,9 @@ class MoranICB(Callback):
 
 # %% ../nbs/04_callbacks.ipynb #b162e251
 class PriorCB(Callback):
-    "Mean of `fname_raster` over the area, emulating prior knowledge such as an airborne survey. Computed for every area, measured or not."
+    "Mean of `fname_raster`, all bands pooled, over the part of the area it covers, as prior knowledge such as an airborne survey. Missing if no cell centre with data is inside."
     def __init__(self,
-        fname_raster:str, # Raster used as the prior
+        fname_raster:str, # Raster used as the prior, in the coordinate system of the areas
         name:str='Prior', # Name of the variable
     ):
         fc.store_attr()

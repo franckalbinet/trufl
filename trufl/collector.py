@@ -17,7 +17,7 @@ from rasterio import transform
 class DataCollector:
     "Emulate field measurements by reading a raster at sample locations."
     def __init__(self,
-        fname_raster:str, # Path to the raster used as ground truth
+        fname_raster:str, # Path to the raster used as ground truth, in the coordinate system of the sample locations
         band:int=1, # Band to read
     ):
         fc.store_attr()
@@ -29,7 +29,7 @@ class DataCollector:
     def get_values(self,
         gdf:gpd.GeoDataFrame, # Sample locations as `Point` or `MultiPoint` geometries
     ) -> list: # Raster value at each point, in the order of `gdf.get_coordinates()`
-        "Read the raster value of the cell under each point of `gdf`."
+        "Read the raster cell under each point of `gdf`. Bounds, coordinate system and no-data are not checked."
         coords = [(x, y) for x, y in gdf.get_coordinates().values]
         pixel_coords = [transform.rowcol(self.affine, *pair) for pair in coords]
         return [self.band_data[int(x), int(y)] for (x, y) in pixel_coords]

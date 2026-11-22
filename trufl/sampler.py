@@ -32,9 +32,9 @@ class Sampler:
             return arr
         
     def sample(self,
-        n:np.ndarray, # Number of points to draw in each area, in `smp_areas` order
-        **kwargs # Passed to `GeoSeries.sample_points`, such as `method` or `rng`
-    ) -> gpd.GeoDataFrame: # One `MultiPoint` per area, indexed by `loc_id`. Areas with `n` of 0 are left out
+        n:np.ndarray, # NumPy array with the number of points to draw in each area, in the row order of `smp_areas`
+        **kwargs # Passed to `GeoSeries.sample_points`. Give `rng` a NumPy generator: an integer repeats the same pattern in each area
+    ) -> gpd.GeoDataFrame: # One `Point` or `MultiPoint` per area, indexed by `loc_id`. Areas with `n` of 0 are left out
         "Draw `n` random points inside each area."
         mask = n == 0    
         pts_gseries = self.smp_areas[~mask].sample_points(n[~mask], **kwargs)
@@ -44,12 +44,12 @@ class Sampler:
 
 # %% ../nbs/01_sampler.ipynb #f5336728
 def rank_to_sample(
-    ranks:np.ndarray, # Rank of each area, in `loc_id` order. Rank 1 is the highest priority
-    budget:int, # Total number of samples to allocate
-    min:int=0, # Minimum number of samples per area
-    policy:str="Weighted", # Allocation policy: `Weighted` or `quantiles`
+    ranks:np.ndarray, # NumPy array of ranks, in the row order of the areas to sample. Rank 1 is the highest priority
+    budget:int, # Number of samples to aim for. The total returned can be far below or above it
+    min:int=0, # Minimum number of samples per area, added on top of `budget` where needed
+    policy:str="Weighted", # Allocation policy, case-sensitive: `Weighted` or `quantiles`
 ) -> np.ndarray: # Number of samples for each area, in the order of `ranks`
-    "Split `budget` samples across areas according to their `ranks`."
+    "Share about `budget` samples across areas according to their `ranks`. Check the total returned."
     if policy == "Weighted":
         weights = 1/ranks
         normalized_weights = np.array(weights) / np.sum(weights)

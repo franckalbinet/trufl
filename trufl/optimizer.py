@@ -17,7 +17,7 @@ from .mcdm import score, normalize, weigh
 class Optimizer:
     "Rank locations by sampling priority from their state variables."
     def __init__(self,
-        state:pd.DataFrame, # One row per `loc_id` and one column per criterion, as returned by calling a `State`
+        state:pd.DataFrame, # One row per `loc_id` and one numeric column per criterion, as returned by calling a `State`
     ):
         self.state = state
         
@@ -27,14 +27,14 @@ class Optimizer:
 # %% ../nbs/02_optimizer.ipynb #9d6313f3
 @patch
 def get_rank(self:Optimizer,
-    is_benefit_x:list, # One flag per criterion: `True` if a high value raises sampling priority (benefit), `False` if a low value does (cost)
-    w_vector:list=None, # Weight of each criterion, summing to 1, or `None` to compute weights with `w_method`
+    is_benefit_x:list, # One flag per column, in order: `True` if a high value raises sampling priority (benefit), `False` if a low value does (cost)
+    w_vector:list=None, # Weight of each column, in order, summing to 1, or `None` to compute weights with `w_method`
     n_method:str=None, # Normalization method: `LINEAR1`, `LINEAR2`, `LINEAR3`, `VECTOR`, or `None` for values already in [0, 1]
     c_method:str=None, # Correlation method for `CRITIC` and `VIC` weighting: `PEARSON`, `ABSPEARSON` or `DCOR`
     w_method:str=None, # Weighting method used when `w_vector` is `None`: `MW`, `EM`, `SD`, `CRITIC` or `VIC`
     s_method:str=None, # Scoring method: `CP` or `TOPSIS`. Required
 ) -> pd.DataFrame: # A `rank` column indexed by `loc_id`, sorted from highest priority (rank 1) to lowest
-    "Rank each location in `state` by sampling priority."
+    "Rank each location by sampling priority. A missing value counts as the most urgent. Ties get different ranks, in arbitrary order."
     # normailize the matrix
     z_matrix, is_benefit_z = normalize(self.matrix, is_benefit_x, n_method)
     

@@ -101,7 +101,7 @@ def anonymize_raster(
     new_lat_origin:float, # Latitude of the new upper-left corner
     band:int=1, # Band to anonymize
 ) -> None:
-    "Move a raster to a new origin and rescale its values to [0, 1]."
+    "Meant to move a raster and rescale it to [0, 1]. Not working: raises `NameError` on every call."
     with rasterio.open(src_fname) as src:
         # Calculate the new transform based on the new origin and the same resolution
         new_transform = from_origin(new_lon_origin, new_lat_origin, src.res[0], src.res[1])
