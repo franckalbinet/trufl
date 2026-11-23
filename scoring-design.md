@@ -195,7 +195,7 @@ Proposed priority: speed (deadlines) and sampler dose (variable sample cost) fir
 
 ### Schedules: spend early or late?
 
-Every experiment so far uses six rounds of 150 samples. `Campaign` takes any list of budgets per round, so other schedules need no new code, but none is tested yet. The answer depends on what the score values, and the expectations below are not checked.
+Every experiment so far uses six rounds of 150 samples. `Campaign` takes any list of budgets per round, so other schedules need no new code, but none was tested before the experiment below. The answer depends on what the score values. The expectations below were written before that experiment.
 
 With the current score, the wrong decisions at the end of the campaign, smaller and more frequent rounds should always help an adaptive strategy, because each sample is placed with more information. In the limit, one sample at a time is best. This score gives no value to deciding early.
 
@@ -208,7 +208,13 @@ Spending early pays only when time has a cost. A missed restriction exposes cons
 
 The binding constraint may be capacity rather than choice: laboratory throughput and the number of field teams can fix the samples per week. The question then becomes how fast to ramp up, not when to spend.
 
-Proposed first experiment: front-loaded, flat and back-loaded schedules with the same total, on the ten plumes, without a prior and with the survey prior, scored by both the end-of-campaign score and the time-weighted score. Nothing here is decided.
+First experiment ("Schedules" in `nbs/_scoring_experiments.ipynb`): front-loaded (300, 200, 150, 100, 100, 50), flat (150 each) and back-loaded (50, 100, 100, 150, 200, 300) schedules of 900 samples, on the ten plumes, with equal allocation, `bayes`, `voi` and `voi` with the survey prior, 10 seeds, rounds of equal length and a truth that does not change. A unit with no sample yet counts as not restricted. Differences between fields:
+
+- At the end of the campaign, the schedule hardly matters: front-loading changes wrong decisions by 0.25 or less, and back-loading adds at most about 0.5 (`bayes` 0.53 ± 0.30, `voi` 0.49 ± 0.32). The expectation above, that this score favours spending late, is not supported.
+- With the decisions in force, averaged over rounds, front-loading lowers wrong decisions by 1.7 to 1.8 against the flat schedule without a prior (9 or 10 of 10 fields), and back-loading raises them by 3.5 to 3.9 (all fields).
+- The survey prior halves the gain from front-loading (0.90 ± 0.12), as expected above.
+
+Within these schedules, spending early costs nothing at the end and lowers wrong decisions during the campaign. Not tested yet: a truth that changes between rounds, deadlines, a capacity limit per round, and more or fewer rounds. Nothing here is decided.
 
 ### Dilemmas for the policy, not for trufl
 
