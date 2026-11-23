@@ -42,6 +42,21 @@ The share of a unit's area above the level is a proxy. What decision makers want
 
 trufl takes the rule as an input, so it can compare rules without choosing one. The scoring defines the true action through the share above the level, the same criterion as the current rule. A fair comparison of rules needs a truth that no rule defines, such as each unit's true dose or true share, scored on the synthetic plumes. That would give DSS4NAFA evidence for the choice. Nothing here is decided.
 
+### How decisions are made in practice
+
+After Fukushima, Japan did not use a share rule. This account is from memory and has not been checked against source documents yet:
+
+- The government restricted shipments of a food by municipality or prefecture. One or a few samples above the limit could lead to a restriction when the exceedances seemed to cover a region. The limit for radiocaesium was 500 Bq/kg in 2011, and 100 Bq/kg for general foods from April 2012.
+- A restriction ended only when several locations stayed below the limit over repeated rounds of sampling.
+- Measured values counted, not only exceedances. In 2011, rice planting was banned where soil exceeded 5,000 Bq/kg, a level that keeps the expected transfer to grain under the food limit. Evacuation zones came from projected annual dose (20 mSv per year).
+- From 2012, Fukushima measured every bag of rice. A census needs no sampling decision.
+
+This is close to a maximum rule: exceedances restrict, and only consistent clean results lift a restriction. A maximum rule is a candidate for the comparison of rules.
+
+In DSS4NAFA, the rule's three settings (permissible level, minimum number of samples, accepted proportion) are rigid, and the dashboard only suggests an action. Analysts and decision makers make the decision. They can change the settings and look at the data themselves: the values, their spatial distribution and other information. The suggested action is one input among several.
+
+The optimization in this design targets only the suggested action under the share rule. It does not target what the people deciding look at, such as the values, the maps or the uncertainty of a unit's mean. This is a gap. Options include scoring strategies against several rules at once, or against how well a strategy estimates the quantities shown on the dashboard. Nothing here is decided.
+
 ## Information layer
 
 A strategy is a function `(samples, gdf_units, budget, rng) -> n`, giving the number of samples for each unit in `gdf_units` order. The proposed public strategy is `voi(rule, min_total, prior, strength, horizon)`:
