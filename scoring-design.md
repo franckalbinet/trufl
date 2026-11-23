@@ -193,6 +193,23 @@ First test ("Health as a limit" in the experiments notebook, same plumes and cos
 
 Proposed priority: speed (deadlines) and sampler dose (variable sample cost) first, since both occur in every response and both change where samples go. Equity and decisions with several actions are larger design changes, for after the core is stable.
 
+### Schedules: spend early or late?
+
+Every experiment so far uses six rounds of 150 samples. `Campaign` takes any list of budgets per round, so other schedules need no new code, but none is tested yet. The answer depends on what the score values, and the expectations below are not checked.
+
+With the current score, the wrong decisions at the end of the campaign, smaller and more frequent rounds should always help an adaptive strategy, because each sample is placed with more information. In the limit, one sample at a time is best. This score gives no value to deciding early.
+
+Spending early pays only when time has a cost. A missed restriction exposes consumers for as long as it is in force, and a needless one costs income for each month it lasts. A time-weighted score would add up the cost of the decisions in force after each round, weighted by how long each round lasts. This is the cost of delay that "Speed against certainty" asks for. Under it, spending early is expected to win, by how much depending on the data:
+
+- No prior: an early pilot spread over all units finds the close units before targeting can pay, which argues for spending early.
+- A good prior, such as an airborne survey: the prior already shows the close units, so targeting works from the first round and spending early matters less.
+- A poor prior: spending early protects against trusting it.
+- A truth that changes: Cs-134 decays (half-life about 2 years), weathering moves contamination, and crops have harvest and market dates. Late samples measure a different state, and some decisions have deadlines. This favours spending early, and needs ground truths that change between rounds, which the simulation does not have.
+
+The binding constraint may be capacity rather than choice: laboratory throughput and the number of field teams can fix the samples per week. The question then becomes how fast to ramp up, not when to spend.
+
+Proposed first experiment: front-loaded, flat and back-loaded schedules with the same total, on the ten plumes, without a prior and with the survey prior, scored by both the end-of-campaign score and the time-weighted score. Nothing here is decided.
+
 ### Dilemmas for the policy, not for trufl
 
 - Strict against lenient levels. Japan's limit for general food is 100 Bq/kg; the Codex guideline level is 1000 Bq/kg. A strict level builds trust and helps trade, but leads to more restrictions. The authorities set the level, and trufl takes it as input.
@@ -244,6 +261,7 @@ Each of these needs your decision:
 - Is the share of samples above the permissible level the right criterion, or should decisions target what it stands for, such as dose to consumers? See "Is the share rule the right criterion?".
 - Would decision makers accept setting the ratio `r` between the cost of a missed and of a needless restriction openly, as a dashboard setting next to the permissible level and the accepted proportion? See "Costs from MCDM".
 - What bound on the probability of a missed restriction per unit would be acceptable, and should it be the same for every unit? See "Health as a limit".
+- Which constraint binds the sampling schedule in practice: deadlines such as harvest or market dates, how long consumers are exposed, or laboratory and field capacity? See "Schedules: spend early or late?".
 
 ## Proposed order
 
