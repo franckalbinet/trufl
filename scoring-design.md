@@ -44,12 +44,20 @@ trufl takes the rule as an input, so it can compare rules without choosing one. 
 
 ### How decisions are made in practice
 
-After Fukushima, Japan did not use a share rule. This account is from memory and has not been checked against source documents yet:
+After Fukushima, Japan did not use a share rule. The rules come from the Nuclear Emergency Response Headquarters guideline "Concepts of Inspection Planning and the Establishment and Cancellation of Items and Areas to which Restriction on Distribution and/or Consumption of Foods Concerned Applies" (April 2011, revised often since):
 
-- The government restricted shipments of a food by municipality or prefecture. One or a few samples above the limit could lead to a restriction when the exceedances seemed to cover a region. The limit for radiocaesium was 500 Bq/kg in 2011, and 100 Bq/kg for general foods from April 2012.
-- A restriction ended only when several locations stayed below the limit over repeated rounds of sampling.
-- Measured values counted, not only exceedances. In 2011, rice planting was banned where soil exceeded 5,000 Bq/kg, a level that keeps the expected transfer to grain under the food limit. Evacuation zones came from projected annual dose (20 mSv per year).
-- From 2012, Fukushima measured every bag of rice. A census needs no sampling decision.
+- A local government removes any food item found above the limit from the market. When "extensive areas are found to be affected", the Prime Minister, as head of the Headquarters, restricts distribution of the item in the designated regions. When levels are high, consumption is restricted "irrespective of the number of inspected samples". The guideline does not set a share or a count of exceedances; whether an area is affected is a judgement. (Ministry of the Environment booklet, section 8.1.1.)
+- A restriction is lifted when inspections at 3 or more locations per municipality within the last month are all below the limit. (MHLW press release, March 2021.)
+- The limits for radiocaesium came into force on 1 April 2012: 100 Bq/kg for general foods, 50 for milk and infant foods, 10 for drinking water. They replaced the provisional values of 2011 (500 Bq/kg for general foods), which assumed 5 mSv per year from food; the new ones assume 1 mSv per year. The numbers are from memory; the sources found confirm the dates and the dose basis only.
+- Measured values counted, not only exceedances. In April 2011, rice planting was banned in paddies with more than 5,000 Bq/kg of caesium in soil, from a transfer factor of 0.1 (the highest found in the literature) and the 500 Bq/kg limit. (Secondary sources and MAFF slides; the original MAFF notice was not found.)
+- From 2012 to 2019, Fukushima measured every bag of rice with conveyor-type meters, then moved to staged random monitoring from the 2020 harvest. No rice has exceeded the limit since 2015. (Ministry of the Environment booklet, section 8.2.)
+
+Sources:
+
+- Ministry of the Environment, booklet on health effects of radiation, [section 8.1.1](https://www.env.go.jp/en/chemi/rhm/basic-info/2022/08-01-01.html), [section 8.1.3](https://www.env.go.jp/en/chemi/rhm/basic-info/2022/08-01-03.html), [section 8.2.1 (rice)](https://www.env.go.jp/en/chemi/rhm/basic-info/2023/08-02-01.html) and [the Concepts guideline](https://www.env.go.jp/en/chemi/rhm/basic-info/1st/08-01-15.html).
+- MHLW, [revision of the Concepts, March 2021](https://www.mhlw.go.jp/english/topics/2011eq/dl/food_revision_26%20March_2021.pdf) and [March 2026](https://www.mhlw.go.jp/english/topics/2011eq/dl/food_revision_30_March_2026.pdf).
+- MAFF, [response to the accident](https://www.maff.go.jp/e/policies/food_safety/attach/pdf/response-1.pdf).
+- IAEA, [slides on the rice transfer factor](https://www.iaea.org/sites/default/files/21/07/_t2_01_iaea_shinano.pdf).
 
 This is close to a maximum rule: exceedances restrict, and only consistent clean results lift a restriction. A maximum rule is a candidate for the comparison of rules.
 
