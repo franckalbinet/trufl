@@ -233,6 +233,24 @@ The next informative experiment needs a truth that changes between rounds, with 
 - Strict against lenient levels. Japan's limit for general food is 100 Bq/kg; the Codex guideline level is 1000 Bq/kg. A strict level builds trust and helps trade, but leads to more restrictions. The authorities set the level, and trufl takes it as input.
 - Fine against coarse restriction units. Restricting a whole municipality is simple but restricts clean land. Partial restrictions need more samples. trufl could show what each unit size costs in samples, but the choice stays with the authorities.
 
+## Design-based and model-based inference
+
+The two approaches differ in where the randomness comes from. Brus and de Gruijter (1997) set out the choice for soil surveys, after de Gruijter and ter Braak (1990).
+
+- Design-based. The field's values are fixed and unknown. The randomness comes only from the choice of sample locations. Each location must have a known chance of selection above zero, as in simple random, stratified or systematic random sampling. Estimators such as Horvitz–Thompson weight each sample by the inverse of that chance. Bias and variance are taken over the samples the design could have drawn. The target is a quantity of the actual unit, such as its true share of cells above the level. The results need no assumption about spatial structure, but the samples must come from a probability design.
+- Model-based. The field is one draw from a random process, such as a Gaussian random field with a trend and a variogram. Sample locations are fixed and can be chosen on purpose. Inference uses the model and is conditional on the samples, as in kriging or Bayesian geostatistics. The results are valid only if the model is adequate. Purposive or convenience locations are acceptable if, given the model's covariates, the choice of location does not depend on the value there. The model also predicts at places without samples: maps, sub-unit posteriors and clusters.
+
+| | Design-based | Model-based |
+|---|---|---|
+| Source of randomness | Selection of locations | The process that made the field |
+| Sampling requirement | Probability design with known chances | Any choice of locations that does not depend on the values |
+| Validity rests on | The design | The model |
+| Target | A quantity of the whole unit | Predictions at points and over areas, including parts of a unit |
+| Efficient layouts | Stratified random | Spatial coverage, or layouts that minimise kriging variance |
+| Strength | Large samples, few assumptions | Small samples, where spatial correlation adds information |
+
+In trufl, the beta-binomial share model is a model, but it treats a unit's samples as random draws within the unit. Its validity is design-based in this sense. The spread placement strategies and the prior raster use model-based ideas. The two sections below depend on this distinction. Convenience data break the random-draw assumption (see "Data without a sampling plan"). Partial restriction needs estimates for parts of a unit, which only a model gives (see "Partial restriction").
+
 ## Partial restriction
 
 The share rule pools all samples in a unit. With 10% accepted, a hot cluster that covers 5% of a unit passes the rule. Restricting part of a unit goes beyond the rule and needs its own cost. Without that cost, a method that is allowed to split units splits all of them.
