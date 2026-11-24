@@ -214,12 +214,70 @@ First experiment ("Schedules" in `nbs/_scoring_experiments.ipynb`): front-loaded
 - With the decisions in force, averaged over rounds, front-loading lowers wrong decisions by 1.7 to 1.8 against the flat schedule without a prior (9 or 10 of 10 fields), and back-loading raises them by 3.5 to 3.9 (all fields).
 - The survey prior halves the gain from front-loading (0.90 ± 0.12), as expected above.
 
-Within these schedules, spending early costs nothing at the end and lowers wrong decisions during the campaign. Not tested yet: a truth that changes between rounds, deadlines, a capacity limit per round, and more or fewer rounds. Nothing here is decided.
+What can be concluded:
+
+- The gain of front-loading on the score in force follows largely by construction: more samples earlier decide more units earlier, and back-loading starts with 50 units unsampled. Any score that values early decisions favours early samples. This part checks the bookkeeping more than it teaches.
+- The finding is that spending early costs nothing at the end. Holding budget back to learn first and then target the close units gains nothing on these plumes. So the schedule is not a statistical trade-off here: time costs, deadlines and capacity should set it, not sampling efficiency. In practice: sample broadly as early as possible, and do not keep budget back for later targeting.
+- A good prior makes the schedule matter less, because it already shows where the close units are.
+
+What could change this conclusion:
+
+- A truth that changes. Japan lifts a restriction only with 3 or more samples per municipality from the last month. With decay and weathering, late samples are needed to lift restrictions, which is a reason to keep budget for later rounds that a static truth cannot show.
+- The default for a unit with no sample. Here it counts as not restricted. Early restrictions in Fukushima were broad and precautionary; with that default, unsampled units count as needless restrictions instead. This would change the size of the effect, probably not its direction.
+- Many small rounds, where adaptive targeting has the most room to help, are not tested.
+
+The next informative experiment needs a truth that changes between rounds, with decisions to lift restrictions. Also not tested yet: deadlines and a capacity limit per round. Nothing here is decided.
 
 ### Dilemmas for the policy, not for trufl
 
 - Strict against lenient levels. Japan's limit for general food is 100 Bq/kg; the Codex guideline level is 1000 Bq/kg. A strict level builds trust and helps trade, but leads to more restrictions. The authorities set the level, and trufl takes it as input.
 - Fine against coarse restriction units. Restricting a whole municipality is simple but restricts clean land. Partial restrictions need more samples. trufl could show what each unit size costs in samples, but the choice stays with the authorities.
+
+## Partial restriction
+
+The share rule pools all samples in a unit. With 10% accepted, a hot cluster that covers 5% of a unit passes the rule. Restricting part of a unit goes beyond the rule and needs its own cost. Without that cost, a method that is allowed to split units splits all of them.
+
+A unit's samples alone rarely show a cluster. About 10 samples often miss a cluster that covers a small part of the unit. Most of the information about where a cluster lies comes from the prior raster, such as the airborne survey, and the samples confirm it.
+
+Two ways to flag a unit that may need splitting:
+
+- A spatial scan statistic on the unit's samples tests for a sub-area where the share above the level is at least 10%. It is cheap and easy to explain, and uses the samples only.
+- A posterior map at a resolution finer than the unit combines the prior raster and the samples. The flag is the probability that some sub-area has a share of at least 10%.
+
+Proposed decision: compare the expected cost of three actions for the unit: restrict all of it, restrict none of it, or restrict part of it. The cost of a partial restriction is the expected wrong decisions in each part plus a split cost for administration, enforcement and public trust. This is the expected-cost comparison of `voi` with one more action.
+
+The candidate parts decide most of the method:
+
+- Administrative or field boundaries, such as former villages or parcels. The method chooses which parts to restrict, and the result is simple to enforce. Japan is thought to have restricted rice by former municipality after 2011 (not yet checked against a source).
+- One straight cut, such as a clean west and a hot east. The method searches the angle and the offset, starting from the direction of the prior's gradient or of the plume edge (see "Directional fields and plumes").
+- Recursive cuts on coordinates, as in a decision tree. A rule such as "east of this road is restricted" is easy to explain. With few samples, the cuts overfit.
+
+With partial restriction as an action, `voi` values a sample by how much it lowers the expected cost of the best action for its unit, split included. Samples then go to the likely cut line. On the synthetic plumes, that line is the plume edge, where the close decisions are.
+
+Proposed first step: one straight cut, the three actions and a split cost, on the synthetic plumes where the edge crosses units, scored by wrong decisions weighted by area. Nothing here is decided.
+
+## Data without a sampling plan
+
+In an emergency, many institutions collect samples without a common sampling plan: near roads and villages, or at places with higher dose, as Japan's guidelines asked. These data cannot be discarded.
+
+`voi` allocates only the planned samples, given all data so far, and works with any data. The information layer under it fails. The beta-binomial model per unit uses the share of samples above the level as an estimate of the share of the unit's area above the level. That estimate is unbiased only when samples are placed at random within the unit. Samples near roads or at hot spots bias it. The DSS4NAFA share rule has the same bias.
+
+Model-based geostatistics does not need random locations (Diggle and Ribeiro, "Model-based Geostatistics", 2007; Brus and de Gruijter, Geoderma, 1997, on design-based and model-based inference). The method fits a spatial model of the field to all data at their coordinates, with the prior raster as a covariate, by regression kriging or a Bayesian Gaussian process. Each unit's posterior share above the level is then an integral over the unit. The inference is valid when the choice of locations does not depend on the values beyond what the covariates explain. This is the spatial form of "missing at random".
+
+Sampling is preferential when samplers choose places because of their values, as with hot spots. Two remedies exist:
+
+- Add the drivers of the choice as covariates: survey dose rate, distance to roads, the institution.
+- Model the locations and the values together (Diggle, Menezes and Su, "Geostatistical inference under preferential sampling", 2010).
+
+Institutions and laboratories differ in bias and in noise. A random effect per institution models both, and extends the measurement noise of #11.
+
+A small planned sample, placed by `voi`, calibrates the bias of the convenience data. Survey statistics has methods that combine a probability sample with non-probability data, such as mass imputation and doubly robust estimators.
+
+In trufl, `voi` stays and a spatial posterior replaces the beta-binomial per unit. Each round, the convenience data update the posterior, and `voi` places the planned budget given all data. `voi` could also tell the other institutions where their next samples help most. The same posterior gives the map finer than the unit that partial restriction needs.
+
+The approach needs the coordinates of every sample, and ideally its institution and the reason it was taken.
+
+Proposed test: add convenience samples to the simulation, near a road network or biased towards hot spots. Compare `voi` with the beta-binomial and with a spatial posterior, with and without a small planned sample. Nothing here is decided.
 
 ## Simulation module
 
@@ -256,7 +314,7 @@ Each of these needs your decision:
 - Stakes data and their elicitation. The value layer starts with weight 1 for every unit.
 - The asymmetry between a missed and a needless restriction (see "Two costs per unit"), and the other dilemmas.
 - Several foodstuffs and radionuclides sharing one budget.
-- "Partially restrict". Placement within a unit stays uniform random in the first version (see "Placement within a unit").
+- "Partially restrict". Placement within a unit stays uniform random in the first version (see "Placement within a unit" and "Partial restriction").
 - How to set the weight of a prior from its quality.
 - Reinforcement learning, except as a benchmark (see "Reinforcement learning as a benchmark").
 
@@ -267,6 +325,8 @@ Each of these needs your decision:
 - Is the share of samples above the permissible level the right criterion, or should decisions target what it stands for, such as dose to consumers? See "Is the share rule the right criterion?".
 - Would decision makers accept setting the ratio `r` between the cost of a missed and of a needless restriction openly, as a dashboard setting next to the permissible level and the accepted proportion? See "Costs from MCDM".
 - What bound on the probability of a missed restriction per unit would be acceptable, and should it be the same for every unit? See "Health as a limit".
+- Must a partial restriction follow administrative or field boundaries, or may it follow any line? What does "Partially restrict" mean in the dashboard? See "Partial restriction".
+- Do the data that reach DSS4NAFA in an emergency record each sample's coordinates, its institution and the reason it was taken? See "Data without a sampling plan".
 - Which constraint binds the sampling schedule in practice: deadlines such as harvest or market dates, how long consumers are exposed, or laboratory and field capacity? See "Schedules: spend early or late?".
 
 ## Proposed order
